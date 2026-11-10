@@ -8,7 +8,7 @@ Funziona nel browser, su PC e su Android, senza server. I file restano sul dispo
 
 Moduli: Unisci, Riordina, Sostituisci, Dividi, Segnalibri, Annota (evidenziatore e testo), Converti (Markdown e DOCX in HTML o EPUB).
 
-Pubblicazione: GitHub Pages serve la cartella `docs/` del ramo `main`, senza build.
+Pubblicazione: GitHub Pages serve la cartella `docs/` del ramo `main`, senza build. La cartella contiene anche `manifest.webmanifest`, `sw.js` e le icone della PWA: per forzare l'aggiornamento della cache dopo una modifica incrementa `VERSIONE` in `sw.js`.
 
 ### Ricostruire `docs/index.html`
 
