@@ -1,0 +1,3 @@
+# Nessuna build: Netlify pubblica la cartella public, che contiene il file index.html già pronto.
+[build]
+  publish = "public"
