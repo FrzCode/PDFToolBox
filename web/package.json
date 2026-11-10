@@ -1,0 +1,12 @@
+{
+  "name": "pdf-suite-web",
+  "private": true,
+  "type": "module",
+  "description": "Build della web app PDF Suite: node build.mjs [dist di mupdf] [node_modules]",
+  "dependencies": {
+    "jszip": "3.10.2",
+    "mammoth": "1.13.0",
+    "marked": "18.1.3",
+    "mupdf": "1.28.1"
+  }
+}

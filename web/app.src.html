@@ -1,0 +1,2196 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#2f5fd0">
+<title>PDF Suite</title>
+<style>
+:root {
+  --bg: #f3f4f7; --pannello: #ffffff; --testo: #1d2330; --tenue: #667085; --linea: #dde1e8;
+  --primario: #2f5fd0; --primario-t: #ffffff; --ok: #1f8a4c; --pericolo: #c8342f;
+  --sel: #e4ecff; --raggio: 10px; --nav-h: 58px;
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+}
+@media (prefers-color-scheme: dark) {
+  :root { --bg: #14171c; --pannello: #1e2229; --testo: #e8ebf1; --tenue: #98a2b3; --linea: #2f3641;
+          --primario: #6c94f5; --primario-t: #0f1622; --ok: #4cc07d; --pericolo: #f0706b; --sel: #27375d; }
+}
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+html, body { margin: 0; height: 100%; }
+body { background: var(--bg); color: var(--testo); font-size: 15px; line-height: 1.4;
+       display: flex; flex-direction: column; }
+header { display: flex; align-items: center; justify-content: space-between; gap: 12px;
+         padding: 10px 16px; background: var(--pannello); border-bottom: 1px solid var(--linea); }
+header h1 { margin: 0; font-size: 17px; font-weight: 650; }
+#stato-motore { font-size: 12px; color: var(--tenue); }
+#stato-motore.errore { color: var(--pericolo); }
+#opz-condividi { display: flex; align-items: center; gap: 6px; margin-left: auto; font-size: 12px; color: var(--tenue); cursor: pointer; }
+nav#schede { display: flex; gap: 4px; padding: 6px 12px 0; background: var(--pannello);
+             border-bottom: 1px solid var(--linea); overflow-x: auto; }
+nav#schede button { border: 0; background: none; color: var(--tenue); font: inherit; font-weight: 550;
+                    padding: 9px 12px; border-bottom: 3px solid transparent; cursor: pointer; white-space: nowrap; }
+nav#schede button[aria-selected="true"] { color: var(--primario); border-bottom-color: var(--primario); }
+nav#schede .ico { margin-right: 6px; }
+main { flex: 1; min-height: 0; overflow: auto; padding: 14px 16px 24px; }
+.pannello h2 { margin: 0 0 10px; font-size: 18px; }
+.tenue { color: var(--tenue); }
+.barra { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin: 10px 0; }
+.barra .spazio { flex: 1; }
+.btn { font: inherit; font-weight: 550; border: 1px solid var(--linea); background: var(--pannello); color: var(--testo);
+       border-radius: 8px; padding: 8px 13px; min-height: 38px; cursor: pointer; }
+.btn:hover:not(:disabled) { border-color: var(--tenue); }
+.btn:disabled { opacity: .45; cursor: default; }
+.btn.p { background: var(--primario); border-color: var(--primario); color: var(--primario-t); }
+.btn.s { background: var(--ok); border-color: var(--ok); color: #fff; }
+.btn.d { color: var(--pericolo); }
+.btn.piatto { width: 100%; text-align: left; }
+.lista { list-style: none; margin: 0; padding: 0; background: var(--pannello); border: 1px solid var(--linea);
+         border-radius: var(--raggio); overflow: auto; }
+.lista li { display: flex; gap: 10px; align-items: baseline; padding: 10px 12px; border-bottom: 1px solid var(--linea); cursor: pointer; }
+.lista li:last-child { border-bottom: 0; }
+.lista li[aria-selected="true"] { background: var(--sel); }
+.lista .vuoto { color: var(--tenue); cursor: default; justify-content: center; padding: 28px 12px; text-align: center; }
+.lista .nome { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.lista .meta { color: var(--tenue); font-size: 12px; white-space: nowrap; }
+#un-lista { min-height: 200px; max-height: 52vh; }
+.trascina { outline: 2px dashed var(--primario); outline-offset: -6px; }
+
+/* Segnalibri */
+.sg-griglia { display: grid; grid-template-columns: 300px minmax(0, 1fr); gap: 14px; height: calc(100dvh - 190px); min-height: 420px; }
+.sg-sx { display: flex; flex-direction: column; gap: 8px; min-height: 0; }
+.sg-sx h3 { margin: 0; font-size: 15px; }
+#sg-lista { flex: 1; min-height: 120px; }
+#sg-lista .pg { width: 34px; text-align: center; color: var(--tenue); flex: none; }
+#sg-lista .tit { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.sg-coppia { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+.sg-dx { display: flex; flex-direction: column; min-height: 0; min-width: 0; }
+#sg-vista { flex: 1; overflow: auto; background: var(--bg); border: 1px solid var(--linea); border-radius: var(--raggio); min-height: 240px; }
+#sg-img { display: block; margin: 0 auto; background: #fff; cursor: crosshair; box-shadow: 0 1px 6px rgba(0,0,0,.18); }
+#sg-vista .centro { padding: 40px 16px; text-align: center; color: var(--tenue); }
+.sg-nav .etichetta { min-width: 92px; text-align: center; font-variant-numeric: tabular-nums; }
+
+dialog { border: 1px solid var(--linea); border-radius: 12px; background: var(--pannello); color: var(--testo); padding: 18px; width: min(92vw, 420px); }
+dialog::backdrop { background: rgba(0,0,0,.4); }
+dialog label { display: block; margin-bottom: 8px; }
+dialog input { width: 100%; font: inherit; padding: 9px 10px; border: 1px solid var(--linea); border-radius: 8px;
+               background: var(--bg); color: var(--testo); }
+dialog .azioni { display: flex; justify-content: flex-end; gap: 8px; margin-top: 14px; }
+
+#toast { position: fixed; left: 50%; bottom: 20px; transform: translateX(-50%); max-width: min(92vw, 520px);
+         background: #20252e; color: #fff; padding: 11px 16px; border-radius: 10px; font-size: 14px; z-index: 30;
+         box-shadow: 0 6px 24px rgba(0,0,0,.3); }
+#toast.errore { background: var(--pericolo); }
+#occupato { position: fixed; inset: 0; background: rgba(0,0,0,.35); display: flex; align-items: center; justify-content: center; z-index: 20; }
+#occupato div { background: var(--pannello); padding: 16px 22px; border-radius: 12px; display: flex; gap: 12px; align-items: center; }
+.rotella { width: 18px; height: 18px; border: 3px solid var(--linea); border-top-color: var(--primario); border-radius: 50%; animation: gira .8s linear infinite; }
+@keyframes gira { to { transform: rotate(360deg); } }
+
+/* Riordina */
+.ri-griglia { position: relative; display: grid; grid-template-columns: repeat(auto-fill, minmax(118px, 1fr)); gap: 10px 8px;
+              margin-top: 8px; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; }
+.mini { display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 6px; border-radius: 8px; cursor: grab; touch-action: pan-y; }
+.mini .cornice { position: relative; width: 100%; background: #fff; border: 1px solid var(--linea); box-shadow: 0 1px 3px rgba(0,0,0,.15); }
+.mini img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; pointer-events: none; }
+.mini .num { font-size: 12px; color: var(--tenue); font-variant-numeric: tabular-nums; }
+.mini[aria-selected="true"] { background: var(--sel); outline: 3px solid var(--primario); }
+.mini.in-volo { opacity: .3; }
+#ri-ins { position: absolute; width: 4px; background: var(--primario); border-radius: 2px; pointer-events: none; z-index: 5; }
+.fantasma { position: fixed; z-index: 40; pointer-events: none; opacity: .88; background: #fff; border-radius: 3px;
+            box-shadow: 0 8px 24px rgba(0,0,0,.4); }
+.fantasma img { display: block; width: 100%; }
+.fantasma .conta { position: absolute; top: -8px; right: -8px; background: var(--primario); color: var(--primario-t);
+                   border-radius: 999px; min-width: 24px; height: 24px; display: grid; place-items: center; font-size: 12px; font-weight: 650; }
+.btn[aria-pressed="true"] { background: var(--sel); border-color: var(--primario); color: var(--primario); }
+
+/* Sostituisci e Dividi: griglie di miniature */
+.pg-griglia { --w: 130px; align-items: start; display: grid; grid-template-columns: repeat(auto-fill, minmax(var(--w), 1fr)); gap: 12px 10px; margin-top: 8px; }
+.pg-cella { display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 6px; border-radius: 8px; min-width: 0;
+            border: 1px solid transparent; background: none; color: inherit; font: inherit; cursor: pointer; }
+.pg-cella .cornice { position: relative; width: 100%; background: #fff; border: 1px solid var(--linea); box-shadow: 0 1px 3px rgba(0,0,0,.15); }
+.pg-cella img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; pointer-events: none; }
+.pg-cella .num { max-width: 100%; font-size: 12px; color: var(--tenue); font-variant-numeric: tabular-nums;
+                 overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.pg-cella .riga { display: flex; align-items: center; gap: 6px; max-width: 100%; }
+.pg-cella input { width: 18px; height: 18px; margin: 0; flex: none; accent-color: var(--primario); }
+button.pg-cella:hover, label.pg-cella:hover { border-color: var(--primario); }
+.pg-cella.sostituita { background: var(--sel); border-color: var(--primario); }
+.pg-cella.sostituita .num { color: var(--primario); }
+.pg-cella.sel { background: var(--sel); outline: 2px solid var(--primario); }
+.di-riga { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin: 10px 0 4px; }
+.di-riga input[type="text"] { flex: 1; min-width: 180px; min-height: 38px; font: inherit; padding: 8px 10px;
+                              border: 1px solid var(--linea); border-radius: 8px; background: var(--pannello); color: var(--testo); }
+.di-nota { font-size: 12px; margin-bottom: 8px; }
+
+/* Annota */
+.an-strumenti { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; }
+.an-strumenti .btn { padding: 8px 4px; line-height: 1.2; }
+.an-opzioni { min-height: 38px; }
+#an-colori { display: flex; gap: 8px; }
+.an-chip { width: 34px; height: 34px; min-height: 0; padding: 0; border-radius: 50%; border: 2px solid var(--linea); cursor: pointer; }
+.an-chip[aria-pressed="true"] { border-color: var(--testo); box-shadow: 0 0 0 2px var(--primario); }
+#an-dim-et { display: flex; align-items: center; gap: 6px; }
+#an-dim { font: inherit; padding: 6px 8px; border: 1px solid var(--linea); border-radius: 8px; background: var(--pannello); color: var(--testo); min-height: 38px; }
+#an-vista { overflow: auto; height: calc(100dvh - 330px); min-height: 300px; background: var(--bg); border: 1px solid var(--linea); border-radius: var(--raggio); padding: 10px; }
+#an-vista .centro { padding: 40px 16px; text-align: center; color: var(--tenue); }
+#an-pagina { position: relative; margin: 0 auto; background: #fff; box-shadow: 0 1px 6px rgba(0,0,0,.18); }
+#an-img { display: block; width: 100%; height: 100%; user-select: none; -webkit-user-select: none; pointer-events: none; }
+#an-ov { position: absolute; inset: 0; pointer-events: none; }
+#an-ov.evidenzia { pointer-events: auto; touch-action: none; cursor: text; }
+#an-ov.testo { pointer-events: auto; touch-action: pan-x pan-y; cursor: crosshair; }
+#an-ov.seleziona { pointer-events: auto; touch-action: pan-x pan-y; }
+.an-selr { position: absolute; opacity: .45; pointer-events: none; border-radius: 2px; }
+.an-hit { position: absolute; padding: 0; min-height: 0; background: transparent; border: 1.5px dashed var(--primario); border-radius: 2px; cursor: pointer; }
+.an-hit[aria-pressed="true"] { background: rgba(47,95,208,.2); border-style: solid; }
+.an-nav .etichetta { min-width: 92px; text-align: center; font-variant-numeric: tabular-nums; }
+dialog textarea { width: 100%; font: inherit; padding: 9px 10px; border: 1px solid var(--linea); border-radius: 8px;
+                  background: var(--bg); color: var(--testo); resize: vertical; min-height: 110px; }
+
+/* Converti */
+.cv-formato label { display: inline-flex; align-items: center; gap: 6px; padding: 8px 12px; border: 1px solid var(--linea);
+                    border-radius: 8px; background: var(--pannello); cursor: pointer; }
+.cv-log { margin: 10px 0 0; padding: 10px 12px; min-height: 90px; background: var(--pannello); border: 1px solid var(--linea);
+          border-radius: var(--raggio); font: 12.5px/1.5 ui-monospace, Menlo, Consolas, monospace; white-space: pre-wrap; overflow-wrap: anywhere; }
+@media (max-width: 719px) {
+  body { padding-bottom: calc(var(--nav-h) + env(safe-area-inset-bottom)); }
+  nav#schede { position: fixed; bottom: 0; left: 0; right: 0; z-index: 10; padding: 0 0 env(safe-area-inset-bottom);
+               border-top: 1px solid var(--linea); border-bottom: 0; justify-content: space-around; overflow: visible; gap: 0; }
+  nav#schede button { flex: 1; display: flex; flex-direction: column; align-items: center; padding: 7px 0 6px;
+                      font-size: 10.5px; border-bottom: 0; border-top: 3px solid transparent; min-width: 0; height: var(--nav-h); }
+  nav#schede button[aria-selected="true"] { border-top-color: var(--primario); }
+  nav#schede .ico { margin: 0 0 2px; font-size: 18px; }
+  #toast { bottom: calc(var(--nav-h) + 14px); }
+  .sg-griglia { grid-template-columns: 1fr; height: auto; }
+  .sg-dx { order: -1; }
+  #sg-vista { height: 58dvh; flex: none; }
+  #sg-lista { max-height: 34dvh; }
+  .sg-sx .sg-apri, .sg-sx .sg-salva { display: none; }
+  .sg-nav .btn { padding: 8px 12px; }
+  .sg-nav .etichetta { min-width: 0; }
+  .solo-pc { display: none; }
+  .un-barra { display: grid; grid-template-columns: repeat(3, 1fr); }
+  .un-barra .spazio { display: none; }
+  .un-barra #un-aggiungi, .un-barra #un-unisci { grid-column: 1 / -1; }
+  .ri-barra { display: grid; grid-template-columns: repeat(3, 1fr); }
+  .ri-barra .spazio { display: none; }
+  .ri-barra .btn, .ri-tocco .btn { padding: 8px 6px; line-height: 1.2; }
+  .ri-tocco { display: grid; grid-template-columns: 1fr 1fr; }
+  .ri-griglia { grid-template-columns: repeat(3, 1fr); }
+  .so-barra, .di-barra { display: grid; grid-template-columns: repeat(2, 1fr); }
+  .so-barra .spazio, .di-barra .spazio { display: none; }
+  .so-barra .btn, .di-barra .btn { padding: 8px 6px; line-height: 1.2; }
+  .di-barra #di-apri { grid-column: 1 / -1; }
+  .pg-griglia { --w: 100px; }
+  #an-vista { height: 52dvh; padding: 6px; }
+  .an-barra { display: grid; grid-template-columns: repeat(2, 1fr); }
+  .an-strumenti .btn { font-size: 13px; padding: 8px 2px; white-space: nowrap; }
+  .an-barra .spazio, .an-barra .etichetta { display: none; }
+  .an-nav .btn { padding: 8px 12px; }
+  .an-nav .etichetta { min-width: 0; }
+  .cv-barra .btn { width: 100%; }
+}
+@media (min-width: 720px) { .solo-telefono { display: none !important; } }
+</style>
+</head>
+<body>
+<header>
+  <h1>PDF Suite</h1>
+  <label id="opz-condividi" hidden><input type="checkbox" id="chk-condividi"> Invia ad un'altra app</label>
+  <span id="stato-motore" role="status">Carico il motore PDF…</span>
+</header>
+
+<nav id="schede" role="tablist" aria-label="Moduli">
+  <button role="tab" data-tab="unisci"><span class="ico">🔗</span>Unisci</button>
+  <button role="tab" data-tab="riordina"><span class="ico">↕</span>Riordina</button>
+  <button role="tab" data-tab="sostituisci"><span class="ico">🔄</span>Sostituisci</button>
+  <button role="tab" data-tab="dividi"><span class="ico">✂</span>Dividi</button>
+  <button role="tab" data-tab="segnalibri"><span class="ico">📌</span>Segnalibri</button>
+  <button role="tab" data-tab="annota"><span class="ico">🖍</span>Annota</button>
+  <button role="tab" data-tab="converti"><span class="ico">🔁</span>Converti</button>
+</nav>
+
+<main>
+  <!-- ═══ UNISCI ═══ -->
+  <section id="tab-unisci" class="pannello" role="tabpanel" hidden>
+    <h2>Unisci PDF</h2>
+    <ul id="un-lista" class="lista" role="listbox" aria-label="PDF da unire"></ul>
+    <div class="barra un-barra">
+      <button class="btn p" id="un-aggiungi">➕ Aggiungi PDF</button>
+      <button class="btn" id="un-rimuovi">🗑 Rimuovi</button>
+      <button class="btn" id="un-su">⬆ Su</button>
+      <button class="btn" id="un-giu">⬇ Giù</button>
+      <span class="spazio"></span>
+      <button class="btn s" id="un-unisci">✔ Unisci PDF</button>
+    </div>
+    <input type="file" id="un-input" accept=".pdf,application/pdf" multiple hidden>
+  </section>
+
+  <!-- ═══ SEGNALIBRI ═══ -->
+  <section id="tab-segnalibri" class="pannello" role="tabpanel" hidden>
+    <div class="sg-griglia">
+      <div class="sg-sx">
+        <h3>📌 Segnalibri</h3>
+        <ul id="sg-lista" class="lista" role="listbox" aria-label="Segnalibri"></ul>
+        <button class="btn piatto sg-apri">📂 Apri PDF</button>
+        <button class="btn s piatto sg-salva">💾 Salva PDF</button>
+        <button class="btn piatto" id="sg-modifica">✏️ Modifica titolo</button>
+        <button class="btn d piatto" id="sg-elimina">🗑️ Elimina sel.</button>
+        <div class="sg-coppia">
+          <button class="btn" id="sg-su">⇤ Livello su</button>
+          <button class="btn" id="sg-giu">Livello giù ⇥</button>
+        </div>
+        <button class="btn piatto" id="sg-vai">📄 Vai a pagina…</button>
+        <div id="sg-info" class="tenue">Nessun PDF aperto.</div>
+      </div>
+      <div class="sg-dx">
+        <div class="barra solo-telefono" style="margin-top:0">
+          <button class="btn p sg-apri">📂 Apri PDF</button>
+          <button class="btn s sg-salva">💾 Salva PDF</button>
+        </div>
+        <div id="sg-vista"><div class="centro">Apri un PDF, poi tocca o clicca sulla pagina per aggiungere un segnalibro.</div></div>
+        <div class="barra sg-nav">
+          <button class="btn" id="sg-prec" aria-label="Pagina precedente">◀<span class="solo-pc"> Prec.</span></button>
+          <button class="btn" id="sg-succ" aria-label="Pagina successiva"><span class="solo-pc">Succ. </span>▶</button>
+          <span class="etichetta" id="sg-pag">—</span>
+          <span class="spazio"></span>
+          <button class="btn" id="sg-zmeno" aria-label="Riduci zoom">➖</button>
+          <button class="btn" id="sg-zpiu" aria-label="Aumenta zoom">➕</button>
+        </div>
+      </div>
+    </div>
+    <input type="file" id="sg-input" accept=".pdf,application/pdf" hidden>
+  </section>
+
+  <!-- ═══ RIORDINA ═══ -->
+  <section id="tab-riordina" class="pannello" role="tabpanel" hidden>
+    <h2>Riordina pagine</h2>
+    <div class="barra ri-barra">
+      <button class="btn p" id="ri-apri">📂 Apri PDF</button>
+      <button class="btn" id="ri-su">⬆ <span class="solo-pc">Sposta </span>su</button>
+      <button class="btn" id="ri-giu">⬇ <span class="solo-pc">Sposta </span>giù</button>
+      <button class="btn d" id="ri-elimina">🗑 Elimina<span class="solo-pc"> selezionate</span></button>
+      <span class="spazio"></span>
+      <button class="btn" id="ri-esporta">📤 Esporta<span class="solo-pc"> selezione</span></button>
+      <button class="btn s" id="ri-salva">💾 Salva PDF</button>
+    </div>
+    <div class="barra ri-tocco solo-telefono" style="margin-top:0">
+      <button class="btn" id="ri-multi" aria-pressed="false">☑ Selezione multipla</button>
+      <button class="btn" id="ri-intervallo" aria-pressed="false">↔ Intervallo</button>
+    </div>
+    <div id="ri-info" class="tenue">Nessun PDF aperto</div>
+    <div id="ri-griglia" class="ri-griglia"><div id="ri-ins" hidden></div></div>
+    <input type="file" id="ri-input" accept=".pdf,application/pdf" hidden>
+  </section>
+
+  <!-- ═══ SOSTITUISCI ═══ -->
+  <section id="tab-sostituisci" class="pannello" role="tabpanel" hidden>
+    <h2>Sostituisci pagine</h2>
+    <div class="barra so-barra">
+      <button class="btn p" id="so-apri">📂 Apri PDF</button>
+      <span class="spazio"></span>
+      <button class="btn s" id="so-salva">💾 Salva come…</button>
+    </div>
+    <div id="so-info" class="tenue"></div>
+    <div id="so-griglia" class="pg-griglia"></div>
+    <input type="file" id="so-input" accept=".pdf,application/pdf" hidden>
+    <input type="file" id="so-sost-input" accept=".pdf,application/pdf" hidden>
+  </section>
+
+  <!-- ═══ DIVIDI ═══ -->
+  <section id="tab-dividi" class="pannello" role="tabpanel" hidden>
+    <h2>Dividi / estrai pagine</h2>
+    <div class="barra di-barra">
+      <button class="btn p" id="di-apri">📂 Apri PDF</button>
+      <button class="btn" id="di-tutte">✅ Tutte</button>
+      <button class="btn" id="di-nessuna">⬜ Nessuna</button>
+      <span class="spazio"></span>
+      <button class="btn" id="di-zmeno" aria-label="Miniature più piccole">➖ Zoom</button>
+      <button class="btn" id="di-zpiu" aria-label="Miniature più grandi">➕ Zoom</button>
+    </div>
+    <div class="di-riga">
+      <input type="text" id="di-range" placeholder="Intervallo, es. 1-3; 5; 7-9" aria-label="Intervallo di pagine"
+             autocomplete="off" autocapitalize="off" spellcheck="false">
+      <button class="btn s" id="di-esporta">📤 Esporta</button>
+    </div>
+    <div class="tenue di-nota">Se spunti delle pagine valgono quelle, e l'intervallo scritto viene ignorato.</div>
+    <div id="di-info" class="tenue"></div>
+    <div id="di-griglia" class="pg-griglia"></div>
+    <input type="file" id="di-input" accept=".pdf,application/pdf" hidden>
+  </section>
+
+  <!-- ═══ ANNOTA ═══ -->
+  <section id="tab-annota" class="pannello" role="tabpanel" hidden>
+    <div class="barra an-barra">
+      <button class="btn p" id="an-apri">📂 Apri PDF</button>
+      <button class="btn s" id="an-salva">💾 Salva PDF</button>
+    </div>
+    <div class="barra an-strumenti" role="group" aria-label="Strumento">
+      <button class="btn" data-strumento="muovi" aria-pressed="true">✋ Muovi</button>
+      <button class="btn" data-strumento="evidenzia" aria-pressed="false">🖍 Evidenzia</button>
+      <button class="btn" data-strumento="testo" aria-pressed="false">🅣 Testo</button>
+      <button class="btn" data-strumento="seleziona" aria-pressed="false">👆 Scegli</button>
+    </div>
+    <div class="barra an-opzioni">
+      <span id="an-colori" role="group" aria-label="Colore"></span>
+      <label id="an-dim-et" hidden>Dimensione
+        <select id="an-dim"><option>10</option><option>12</option><option selected>14</option><option>18</option><option>24</option><option>32</option></select>
+      </label>
+      <span id="an-guida" class="tenue"></span>
+    </div>
+    <div id="an-vista"><div class="centro">Apri un PDF, poi scegli lo strumento: Evidenzia per sottolineare il testo, Testo per scrivere sulla pagina.</div></div>
+    <div class="barra an-nav">
+      <button class="btn" id="an-prec" aria-label="Pagina precedente">◀<span class="solo-pc"> Prec.</span></button>
+      <button class="btn" id="an-succ" aria-label="Pagina successiva"><span class="solo-pc">Succ. </span>▶</button>
+      <span class="etichetta" id="an-pag">—</span>
+      <span class="spazio"></span>
+      <button class="btn" id="an-zmeno" aria-label="Riduci zoom">➖</button>
+      <button class="btn" id="an-zpiu" aria-label="Aumenta zoom">➕</button>
+    </div>
+    <div class="barra" id="an-azioni" hidden>
+      <span id="an-az-et" class="tenue"></span>
+      <span class="spazio"></span>
+      <button class="btn" id="an-modifica">✏️ Modifica testo</button>
+      <button class="btn d" id="an-elimina">🗑 Elimina</button>
+    </div>
+    <input type="file" id="an-input" accept=".pdf,application/pdf" hidden>
+  </section>
+
+  <!-- ═══ CONVERTI ═══ -->
+  <section id="tab-converti" class="pannello" role="tabpanel" hidden>
+    <h2>Converti documenti</h2>
+    <p class="tenue">Markdown e DOCX in HTML o EPUB. I file .doc e l'uscita in DOCX o DOC restano nella Suite Python.</p>
+    <div class="barra cv-barra">
+      <button class="btn p" id="cv-scegli">📂 Scegli file</button>
+    </div>
+    <div id="cv-file" class="tenue">Nessun file scelto. Formati: .md, .docx</div>
+    <div class="barra cv-formato" role="radiogroup" aria-label="Formato di uscita">
+      <span class="tenue">Salva come</span>
+      <label><input type="radio" name="cv-fmt" value="html" checked> HTML</label>
+      <label><input type="radio" name="cv-fmt" value="epub"> EPUB</label>
+    </div>
+    <div class="barra cv-barra">
+      <button class="btn s" id="cv-converti" disabled>🔁 Converti e salva</button>
+    </div>
+    <pre id="cv-log" class="cv-log" aria-live="polite"></pre>
+    <input type="file" id="cv-input" hidden>
+  </section>
+</main>
+
+<dialog id="dlg">
+  <form method="dialog">
+    <label id="dlg-et" for="dlg-in"></label>
+    <input id="dlg-in" autocomplete="off">
+    <div class="azioni">
+      <button type="button" class="btn" id="dlg-annulla">Annulla</button>
+      <button type="submit" class="btn p" value="ok">OK</button>
+    </div>
+  </form>
+</dialog>
+<dialog id="dlg-conf">
+  <form method="dialog">
+    <p id="dlg-conf-msg" style="margin-top:0"></p>
+    <div class="azioni">
+      <button type="button" class="btn" id="dlg-conf-no">Annulla</button>
+      <button type="submit" class="btn d" value="ok" id="dlg-conf-si">OK</button>
+    </div>
+  </form>
+</dialog>
+<dialog id="dlg-testo">
+  <form method="dialog">
+    <label id="dlg-testo-et" for="dlg-testo-in"></label>
+    <textarea id="dlg-testo-in" rows="5"></textarea>
+    <div class="azioni">
+      <button type="button" class="btn" id="dlg-testo-annulla">Annulla</button>
+      <button type="submit" class="btn p" value="ok">OK</button>
+    </div>
+  </form>
+</dialog>
+<div id="toast" role="status" aria-live="polite" hidden></div>
+<div id="occupato" hidden><div><span class="rotella"></span><span id="occupato-msg">Elaboro…</span></div></div>
+
+<!-- Sorgenti incorporati dalla build (testo, non eseguiti) -->
+<script type="text/plain" id="src-mupdf">/*__MUPDF__*/</script>
+<script type="text/plain" id="src-wasmjs">/*__WASMJS__*/</script>
+<script type="text/plain" id="src-worker">/*__WORKER__*/</script>
+<script type="text/plain" id="wasm-b64">/*__WASMB64__*/</script>
+<script type="text/plain" id="src-marked">/*__MARKED__*/</script>
+<script type="text/plain" id="src-mammoth">/*__MAMMOTH__*/</script>
+<script type="text/plain" id="src-jszip">/*__JSZIP__*/</script>
+
+<script>
+"use strict";
+const $ = (s, r = document) => r.querySelector(s);
+const $$ = (s, r = document) => [...r.querySelectorAll(s)];
+
+// ═══════════════════════════════════════════════════════════════════════════
+//  MOTORE: client del Worker che contiene mupdf.js
+// ═══════════════════════════════════════════════════════════════════════════
+const Motore = (() => {
+  let worker, locale, pronto;
+  let seq = 0;
+  const attese = new Map();
+
+  function chiamaGrezzo(op, args = [], trasferibili = []) {
+    if (locale) {
+      // Motore sul thread principale: prima una pausa, così l'interfaccia si ridisegna.
+      return new Promise((r) => setTimeout(r)).then(() => locale.gestisci(op, args));
+    }
+    return new Promise((res, rej) => {
+      const id = ++seq;
+      attese.set(id, { res, rej });
+      worker.postMessage({ id, op, args }, trasferibili);
+    });
+  }
+
+  async function decodificaWasm() {
+    const bin = atob($("#wasm-b64").textContent.trim());
+    const u8 = new Uint8Array(bin.length);
+    for (let i = 0; i < bin.length; i++) u8[i] = bin.charCodeAt(i);
+    const flusso = new Blob([u8]).stream().pipeThrough(new DecompressionStream("gzip"));
+    return new Response(flusso).arrayBuffer();
+  }
+
+  function avvia() {
+    pronto = (async () => {
+      const blobUrl = (testo) => URL.createObjectURL(new Blob([testo], { type: "text/javascript" }));
+      const urlWasmJs = blobUrl($("#src-wasmjs").textContent);
+      const urlMupdf = blobUrl($("#src-mupdf").textContent.replace('"./mupdf-wasm.js"', JSON.stringify(urlWasmJs)));
+      const urlWorker = blobUrl($("#src-worker").textContent);
+      // Il Worker da Blob non parte se la pagina è aperta da file:// o content:// (origine opaca).
+      if (/^https?:$/.test(location.protocol)) {
+        try {
+          const wasm = await decodificaWasm();
+          worker = new Worker(urlWorker, { type: "module" });
+          worker.onmessage = (e) => {
+            const { id, ok, r, errore } = e.data;
+            const a = attese.get(id);
+            if (!a) return;
+            attese.delete(id);
+            ok ? a.res(r) : a.rej(new Error(errore));
+          };
+          worker.onerror = (e) => {
+            for (const a of attese.values()) a.rej(new Error(e.message || "Errore del motore"));
+            attese.clear();
+          };
+          await chiamaGrezzo("init", [wasm, urlMupdf], [wasm]);
+          return;
+        } catch (_) {
+          if (worker) worker.terminate();
+          worker = null;
+          attese.clear();
+        }
+      }
+      // Ripiego: stesso codice, eseguito sul thread principale.
+      locale = await import(urlWorker);
+      await locale.gestisci("init", [await decodificaWasm(), urlMupdf]);
+    })();
+    return pronto;
+  }
+
+  return {
+    avvia,
+    async chiama(op, args = [], trasferibili = []) {
+      await pronto;
+      return chiamaGrezzo(op, args, trasferibili);
+    },
+  };
+})();
+
+// ═══════════════════════════════════════════════════════════════════════════
+//  UTILITÀ INTERFACCIA
+// ═══════════════════════════════════════════════════════════════════════════
+let timerToast;
+function notifica(msg, errore = false) {
+  const t = $("#toast");
+  t.textContent = msg;
+  t.className = errore ? "errore" : "";
+  t.hidden = false;
+  clearTimeout(timerToast);
+  timerToast = setTimeout(() => (t.hidden = true), errore ? 7000 : 4000);
+}
+
+async function conOccupato(msg, fn) {
+  $("#occupato-msg").textContent = msg;
+  $("#occupato").hidden = false;
+  try { return await fn(); } finally { $("#occupato").hidden = true; }
+}
+
+function chiediTesto(etichetta, iniziale = "") {
+  return new Promise((res) => {
+    const dlg = $("#dlg"), inp = $("#dlg-in");
+    $("#dlg-et").textContent = etichetta;
+    inp.value = iniziale;
+    dlg.returnValue = "";
+    dlg.addEventListener("close", () => res(dlg.returnValue === "ok" ? inp.value : null), { once: true });
+    dlg.showModal();
+    inp.focus();
+    inp.select();
+  });
+}
+$("#dlg-annulla").addEventListener("click", () => $("#dlg").close(""));
+
+function chiediTestoLungo(etichetta, iniziale = "") {
+  return new Promise((res) => {
+    const dlg = $("#dlg-testo"), area = $("#dlg-testo-in");
+    $("#dlg-testo-et").textContent = etichetta;
+    area.value = iniziale;
+    dlg.returnValue = "";
+    dlg.addEventListener("close", () => res(dlg.returnValue === "ok" ? area.value : null), { once: true });
+    dlg.showModal();
+    area.focus();
+  });
+}
+$("#dlg-testo-annulla").addEventListener("click", () => $("#dlg-testo").close(""));
+
+function conferma(messaggio, etichettaOk = "OK", classe = "d") {
+  return new Promise((res) => {
+    const dlg = $("#dlg-conf");
+    $("#dlg-conf-msg").textContent = messaggio;
+    $("#dlg-conf-si").textContent = etichettaOk;
+    $("#dlg-conf-si").className = "btn " + classe;
+    dlg.returnValue = "";
+    dlg.addEventListener("close", () => res(dlg.returnValue === "ok"), { once: true });
+    dlg.showModal();
+  });
+}
+$("#dlg-conf-no").addEventListener("click", () => $("#dlg-conf").close(""));
+
+const formatoDim = (n) => (n < 1024 * 1024 ? Math.max(1, Math.round(n / 1024)) + " KB" : (n / 1048576).toFixed(1).replace(".", ",") + " MB");
+const eFilePdf = (f) => f.type === "application/pdf" || /\.pdf$/i.test(f.name);
+
+// Il selettore di salvataggio va aperto subito (serve il gesto dell'utente), prima del lavoro lungo.
+const TIPO_PDF = { descrizione: "PDF", mime: "application/pdf", est: ".pdf" };
+// Opzione "Invia ad un'altra app" (menu di condivisione del sistema): compare solo dove il browser sa
+// condividere file, cioè su telefono. Serve a mandare il risultato ad app che il selettore di Android
+// non offre come cartelle di salvataggio (ad esempio MEGA).
+const chkCondividi = $("#chk-condividi");
+function puoCondividere() {
+  try {
+    return /Android|iPhone|iPad/i.test(navigator.userAgent) && !!navigator.canShare
+      && navigator.canShare({ files: [new File([""], "prova.pdf", { type: "application/pdf" })] });
+  } catch (_) { return false; }
+}
+if (puoCondividere()) {
+  $("#opz-condividi").hidden = false;
+  try { chkCondividi.checked = localStorage.getItem("condividi") === "1"; } catch (_) {}
+  chkCondividi.addEventListener("change", () => { try { localStorage.setItem("condividi", chkCondividi.checked ? "1" : "0"); } catch (_) {} });
+}
+
+async function scegliDestinazione(nome, tipo = TIPO_PDF) {
+  if (!$("#opz-condividi").hidden && chkCondividi.checked) return { tipo: "condividi", nome, mime: tipo.mime };
+  if (window.showSaveFilePicker) {
+    try {
+      const h = await window.showSaveFilePicker({
+        suggestedName: nome,
+        types: [{ description: tipo.descrizione, accept: { [tipo.mime]: [tipo.est] } }],
+      });
+      return { tipo: "file", h, mime: tipo.mime };
+    } catch (e) {
+      if (e.name === "AbortError") return null;
+    }
+  }
+  return { tipo: "download", nome, mime: tipo.mime };
+}
+
+async function scriviDestinazione(dest, bytes) {
+  const blob = new Blob([bytes], { type: dest.mime });
+  if (dest.tipo === "file") {
+    const w = await dest.h.createWritable();
+    await w.write(blob);
+    await w.close();
+    return dest.h.name;
+  }
+  if (dest.tipo === "condividi") {
+    const file = new File([blob], dest.nome, { type: dest.mime });
+    if (navigator.canShare && navigator.canShare({ files: [file] })) {
+      // il gesto dell'utente è scaduto durante l'elaborazione: serve un nuovo tocco per aprire il menu
+      if (!(await conferma(`${dest.nome} è pronto (${formatoDim(blob.size)}).`, "Condividi", "p"))) throw new Error("Condivisione annullata.");
+      try { await navigator.share({ files: [file] }); return dest.nome; }
+      catch (e) { if (e.name === "AbortError") throw new Error("Condivisione annullata."); }
+    }
+    // formato non condivisibile o condivisione fallita: si scarica come al solito
+  }
+  const url = URL.createObjectURL(blob);
+  const a = Object.assign(document.createElement("a"), { href: url, download: dest.nome });
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 60000);
+  return dest.nome;
+}
+
+async function leggiFile(file) {
+  const bytes = new Uint8Array(await file.arrayBuffer());
+  return bytes;
+}
+
+function abilitaTrascinamentoFile(elemento, alDrop, filtro = eFilePdf) {
+  elemento.addEventListener("dragover", (e) => { e.preventDefault(); elemento.classList.add("trascina"); });
+  elemento.addEventListener("dragleave", () => elemento.classList.remove("trascina"));
+  elemento.addEventListener("drop", (e) => {
+    e.preventDefault();
+    elemento.classList.remove("trascina");
+    alDrop([...e.dataTransfer.files].filter(filtro));
+  });
+}
+
+// Miniature caricate a richiesta, solo quando entrano nella vista. Le usano Sostituisci e Dividi;
+// Riordina ha un codice proprio, rimasto com'era. `larghezza()` dà i pixel da chiedere al motore.
+function creaMiniature(griglia, larghezza) {
+  const cache = new Map();    // "documento|pagina|larghezza" → URL del blob
+  let epoca = 0;              // sale a ogni azzeramento: le risposte vecchie vengono scartate
+  const osservatore = new IntersectionObserver((voci) => {
+    for (const v of voci) {
+      if (!v.isIntersecting) continue;
+      osservatore.unobserve(v.target);
+      richiedi(v.target);
+    }
+  }, { root: $("main"), rootMargin: "400px 0px" });
+
+  function svuota() {
+    epoca++;
+    cache.forEach((url) => URL.revokeObjectURL(url));
+    cache.clear();
+  }
+
+  function richiedi(img) {
+    const { doc, pg } = img._mini, w = larghezza(), k = `${doc}|${pg}|${w}`;
+    if (cache.has(k)) { img.src = cache.get(k); return; }
+    const ep = epoca;
+    Motore.chiama("miniatura", [doc, pg, w]).then((r) => {
+      if (ep !== epoca || img._mini.doc !== doc || img._mini.pg !== pg) return;
+      let url = cache.get(k);
+      if (!url) {
+        url = URL.createObjectURL(new Blob([r.img], { type: r.tipo }));
+        cache.set(k, url);
+      }
+      img.src = url;
+    }).catch(() => {});
+  }
+
+  return {
+    osserva(img, doc, pg) {
+      img._mini = { doc, pg };
+      osservatore.unobserve(img);
+      osservatore.observe(img);
+    },
+    // cambiata la larghezza (zoom): le miniature in vista si ricaricano, le altre quando ci arrivano
+    ricarica() {
+      svuota();
+      for (const img of griglia.querySelectorAll("img")) {
+        if (!img._mini) continue;
+        osservatore.unobserve(img);
+        osservatore.observe(img);
+      }
+    },
+    azzera() {
+      osservatore.disconnect();
+      svuota();
+    },
+  };
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+//  MODULO UNISCI
+// ═══════════════════════════════════════════════════════════════════════════
+const Unisci = (() => {
+  let voci = [];   // { chiave, nome, dim, id, numPagine }
+  let sel = -1;
+  const lista = $("#un-lista");
+
+  function disegna() {
+    lista.replaceChildren();
+    if (!voci.length) {
+      const li = document.createElement("li");
+      li.className = "vuoto";
+      li.textContent = "Nessun file. Aggiungi almeno due PDF.";
+      lista.append(li);
+      return;
+    }
+    voci.forEach((v, i) => {
+      const li = document.createElement("li");
+      li.setAttribute("role", "option");
+      li.setAttribute("aria-selected", String(i === sel));
+      const nome = document.createElement("span");
+      nome.className = "nome";
+      nome.textContent = v.nome;
+      const meta = document.createElement("span");
+      meta.className = "meta";
+      meta.textContent = `${v.numPagine} pag. · ${formatoDim(v.dim)}`;
+      li.append(nome, meta);
+      li.addEventListener("click", () => { sel = i; disegna(); });
+      lista.append(li);
+    });
+  }
+
+  async function aggiungi(files) {
+    let aggiunti = 0;
+    for (const f of files) {
+      const chiave = `${f.name}|${f.size}|${f.lastModified}`;
+      if (voci.some((v) => v.chiave === chiave)) continue;
+      try {
+        const bytes = await leggiFile(f);
+        const r = await Motore.chiama("apri", [bytes], [bytes.buffer]);
+        if (r.protetto) { notifica(`${f.name} è protetto da password: non posso unirlo.`, true); continue; }
+        voci.push({ chiave, nome: f.name, dim: f.size, id: r.id, numPagine: r.numPagine });
+        aggiunti++;
+      } catch (e) {
+        notifica(`${f.name}: ${e.message}`, true);
+      }
+    }
+    if (aggiunti) disegna();
+  }
+
+  async function rimuovi() {
+    if (sel < 0) return;
+    const [v] = voci.splice(sel, 1);
+    sel = -1;
+    disegna();
+    await Motore.chiama("chiudi", [v.id]);
+  }
+
+  function sposta(delta) {
+    const j = sel + delta;
+    if (sel < 0 || j < 0 || j >= voci.length) return;
+    [voci[sel], voci[j]] = [voci[j], voci[sel]];
+    sel = j;
+    disegna();
+  }
+
+  async function unisci() {
+    if (voci.length < 2) { notifica("Aggiungi almeno due PDF.", true); return; }
+    const dest = await scegliDestinazione("unito.pdf");
+    if (!dest) return;
+    try {
+      const r = await conOccupato("Unisco i PDF…", () => Motore.chiama("unisci", [voci.map((v) => v.id)]));
+      const nome = await scriviDestinazione(dest, r.bytes);
+      notifica(`PDF unito salvato: ${nome} (${r.numPagine} pagine)`);
+    } catch (e) {
+      notifica(e.message, true);
+    }
+  }
+
+  $("#un-aggiungi").addEventListener("click", () => $("#un-input").click());
+  $("#un-input").addEventListener("change", async (e) => {
+    const files = [...e.target.files];
+    e.target.value = "";
+    await aggiungi(files);
+  });
+  $("#un-rimuovi").addEventListener("click", rimuovi);
+  $("#un-su").addEventListener("click", () => sposta(-1));
+  $("#un-giu").addEventListener("click", () => sposta(+1));
+  $("#un-unisci").addEventListener("click", unisci);
+  abilitaTrascinamentoFile($("#tab-unisci"), aggiungi);
+  disegna();
+})();
+
+// ═══════════════════════════════════════════════════════════════════════════
+//  MODULO SEGNALIBRI
+// ═══════════════════════════════════════════════════════════════════════════
+const Segnalibri = (() => {
+  const ZOOM_MIN = 0.3, ZOOM_MAX = 4.0;
+  const S = { id: null, nome: "", n: 0, pagina: 0, zoom: 1, voci: [], sel: -1, pw: 595, ph: 842, token: 0, url: null };
+  const vista = $("#sg-vista");
+  const lista = $("#sg-lista");
+
+  // ── elenco ────────────────────────────────────────────────────────────────
+  function disegnaLista() {
+    lista.replaceChildren();
+    if (!S.voci.length) {
+      const li = document.createElement("li");
+      li.className = "vuoto";
+      li.textContent = S.id === null ? "Nessun PDF aperto." : "Nessun segnalibro.";
+      lista.append(li);
+      return;
+    }
+    S.voci.forEach((v, i) => {
+      const li = document.createElement("li");
+      li.setAttribute("role", "option");
+      li.setAttribute("aria-selected", String(i === S.sel));
+      const pg = document.createElement("span");
+      pg.className = "pg";
+      pg.textContent = v.pagina + 1;
+      const tit = document.createElement("span");
+      tit.className = "tit";
+      tit.style.paddingLeft = (v.livello - 1) * 16 + "px";
+      tit.textContent = v.titolo;
+      tit.title = v.titolo;
+      li.append(pg, tit);
+      li.addEventListener("click", () => selezionaVoce(i));
+      li.addEventListener("dblclick", modifica);
+      lista.append(li);
+    });
+  }
+
+  function selezionaVoce(i) {
+    S.sel = i;
+    disegnaLista();
+    if (S.id !== null) vaiA(S.voci[i].pagina);
+  }
+
+  // ── visualizzatore ─────────────────────────────────────────────────────────
+  function aggiornaEtichetta() {
+    $("#sg-pag").textContent = S.id === null ? "—" : `Pag. ${S.pagina + 1} / ${S.n}`;
+  }
+
+  async function renderizza() {
+    if (S.id === null) return;
+    const tk = ++S.token;
+    const dpr = Math.min(window.devicePixelRatio || 1, 2);
+    try {
+      const r = await Motore.chiama("renderPagina", [S.id, S.pagina, S.zoom * dpr]);
+      if (tk !== S.token) return;
+      let img = $("#sg-img");
+      if (!img) {
+        vista.replaceChildren();
+        img = document.createElement("img");
+        img.id = "sg-img";
+        img.alt = "Pagina del PDF";
+        img.addEventListener("click", aggiungiQui);
+        vista.append(img);
+      }
+      const vecchio = S.url;
+      S.url = URL.createObjectURL(new Blob([r.png], { type: "image/png" }));
+      img.style.width = r.pw * S.zoom + "px";
+      img.style.height = r.ph * S.zoom + "px";
+      img.src = S.url;
+      if (vecchio) URL.revokeObjectURL(vecchio);
+    } catch (e) {
+      notifica(e.message, true);
+    }
+  }
+
+  function vaiA(p) {
+    if (S.id === null || p < 0 || p >= S.n) return;
+    S.pagina = p;
+    aggiornaEtichetta();
+    renderizza();
+  }
+
+  function zoom(fattore) {
+    S.zoom = Math.min(ZOOM_MAX, Math.max(ZOOM_MIN, S.zoom * fattore));
+    renderizza();
+  }
+
+  // ── apertura ────────────────────────────────────────────────────────────────
+  async function apri(file) {
+    if (!file) return;
+    try {
+      const bytes = await leggiFile(file);
+      const r = await conOccupato("Apro il PDF…", () => Motore.chiama("apri", [bytes], [bytes.buffer]));
+      if (r.protetto) { notifica(`${file.name} è protetto da password: non posso aprirlo.`, true); return; }
+      const toc = (await Motore.chiama("leggiToc", [r.id])).toc;
+      const dim = await Motore.chiama("dimensioni", [r.id, 0]);
+      if (S.id !== null) Motore.chiama("chiudi", [S.id]);
+      S.id = r.id; S.nome = file.name; S.n = r.numPagine; S.pagina = 0; S.sel = -1;
+      S.pw = dim.pw; S.ph = dim.ph;
+      S.voci = toc.filter(([, , p]) => p >= 1).map(([livello, titolo, p]) => ({ titolo, pagina: p - 1, livello }));
+      const ignorate = toc.length - S.voci.length;
+      // zoom iniziale: 1.0 su schermo largo, adattato alla larghezza su telefono
+      const largo = vista.clientWidth - 24;
+      S.zoom = window.innerWidth < 720 && largo > 0 ? Math.max(ZOOM_MIN, Math.min(1, largo / S.pw)) : 1.0;
+      $("#sg-info").textContent = `${file.name}\n${S.n} pagine` + (ignorate ? `\n${ignorate} voci senza pagina ignorate` : "");
+      disegnaLista();
+      aggiornaEtichetta();
+      renderizza();
+    } catch (e) {
+      notifica(`${file.name}: ${e.message}`, true);
+    }
+  }
+
+  // ── modifica dei segnalibri ──────────────────────────────────────────────────
+  async function aggiungiQui() {
+    if (S.id === null) return;
+    const titolo = await chiediTesto(`Titolo segnalibro per pagina ${S.pagina + 1}`, "");
+    if (!titolo) return;
+    // dopo l'ultimo segnalibro di pagina <= corrente, con il livello di quello che precede
+    let pos = S.voci.length;
+    for (let k = 0; k < S.voci.length; k++) {
+      if (S.voci[k].pagina > S.pagina) { pos = k; break; }
+    }
+    const livello = pos > 0 ? S.voci[pos - 1].livello : 1;
+    S.voci.splice(pos, 0, { titolo, pagina: S.pagina, livello });
+    S.sel = -1;
+    disegnaLista();
+  }
+
+  function livello(delta) {
+    if (S.sel < 0) return;
+    const v = S.voci[S.sel];
+    const massimo = S.sel > 0 ? S.voci[S.sel - 1].livello + 1 : 1;
+    v.livello = Math.max(1, Math.min(v.livello + delta, massimo));
+    disegnaLista();
+  }
+
+  async function modifica() {
+    if (S.sel < 0) return;
+    const v = S.voci[S.sel];
+    const nuovo = await chiediTesto(`Modifica titolo (pagina ${v.pagina + 1})`, v.titolo);
+    if (nuovo) { v.titolo = nuovo; disegnaLista(); }
+  }
+
+  function elimina() {
+    if (S.sel < 0) return;
+    S.voci.splice(S.sel, 1);
+    S.sel = -1;
+    disegnaLista();
+  }
+
+  async function vaiAPaginaDialogo() {
+    if (S.id === null) return;
+    const testo = await chiediTesto(`Vai a pagina (1–${S.n})`, "");
+    if (!testo) return;
+    const n = parseInt(testo, 10) - 1;
+    if (Number.isInteger(n) && n >= 0 && n < S.n) vaiA(n);
+  }
+
+  async function salva() {
+    if (S.id === null) { notifica("Nessun PDF aperto.", true); return; }
+    const base = S.nome.replace(/\.pdf$/i, "");
+    const dest = await scegliDestinazione(`${base}_segnalibri.pdf`);
+    if (!dest) return;
+    try {
+      const toc = S.voci.map((v) => [v.livello, v.titolo, v.pagina + 1]);
+      const r = await conOccupato("Salvo il PDF…", () => Motore.chiama("scriviTocESalva", [S.id, toc]));
+      const nome = await scriviDestinazione(dest, r.bytes);
+      notifica(`PDF con ${r.numSegnalibri} segnalibri salvato: ${nome}`);
+    } catch (e) {
+      notifica(e.message, true);
+    }
+  }
+
+  // ── collegamenti ────────────────────────────────────────────────────────────
+  $$(".sg-apri").forEach((b) => b.addEventListener("click", () => $("#sg-input").click()));
+  $("#sg-input").addEventListener("change", async (e) => {
+    const f = e.target.files[0];
+    e.target.value = "";
+    await apri(f);
+  });
+  $$(".sg-salva").forEach((b) => b.addEventListener("click", salva));
+  $("#sg-modifica").addEventListener("click", modifica);
+  $("#sg-elimina").addEventListener("click", elimina);
+  $("#sg-su").addEventListener("click", () => livello(-1));
+  $("#sg-giu").addEventListener("click", () => livello(+1));
+  $("#sg-vai").addEventListener("click", vaiAPaginaDialogo);
+  $("#sg-prec").addEventListener("click", () => vaiA(S.pagina - 1));
+  $("#sg-succ").addEventListener("click", () => vaiA(S.pagina + 1));
+  $("#sg-zpiu").addEventListener("click", () => zoom(1.15));
+  $("#sg-zmeno").addEventListener("click", () => zoom(1 / 1.15));
+  abilitaTrascinamentoFile($("#tab-segnalibri"), (files) => apri(files[0]));
+  $("#sg-info").style.whiteSpace = "pre-line";
+  disegnaLista();
+  return { stato: S }; // esposto per le prove automatiche
+})();
+
+// ═══════════════════════════════════════════════════════════════════════════
+//  MODULO RIORDINA
+// ═══════════════════════════════════════════════════════════════════════════
+const Riordina = (() => {
+  const LARGHEZZA_MINIATURA = Math.round(170 * Math.min(window.devicePixelRatio || 1, 2));
+  const SOGLIA_MOUSE = 6, SOGLIA_TOCCO = 10, ATTESA_TOCCO = 450;
+  const S = {
+    id: null, nome: "", ordine: [],     // ordine: indici (0-based) delle pagine del file originale, nell'ordine mostrato
+    sel: new Set(), ancora: -1,         // sel: posizioni mostrate
+    dim: [], cache: new Map(), inVolo: new Set(), token: 0,
+    multi: false, armaIntervallo: false,
+  };
+  const griglia = $("#ri-griglia");
+  const indicatore = $("#ri-ins");
+  const scorrevole = $("main");
+  let osservatore = null;
+  let P = null;               // gesto di trascinamento in corso
+  let ignoraClick = false;
+
+  const elementi = () => [...griglia.querySelectorAll(".mini")];
+
+  // ── disegno ────────────────────────────────────────────────────────────────
+  function disegna() {
+    if (osservatore) osservatore.disconnect();
+    osservatore = new IntersectionObserver((voci) => {
+      for (const v of voci) {
+        if (!v.isIntersecting) continue;
+        osservatore.unobserve(v.target);
+        richiediMiniatura(+v.target.dataset.pg);
+      }
+    }, { root: scorrevole, rootMargin: "400px 0px" });
+    const els = S.ordine.map((pg, pos) => {
+      const it = document.createElement("div");
+      it.className = "mini";
+      it.dataset.pos = pos;
+      it.dataset.pg = pg;
+      it.setAttribute("aria-selected", String(S.sel.has(pos)));
+      const cornice = document.createElement("div");
+      cornice.className = "cornice";
+      const [pw, ph] = S.dim[pg];
+      cornice.style.aspectRatio = `${pw} / ${ph}`;
+      const img = document.createElement("img");
+      img.alt = `Pagina ${pg + 1}`;
+      img.draggable = false;
+      if (S.cache.has(pg)) img.src = S.cache.get(pg);
+      else osservatore.observe(it);
+      cornice.append(img);
+      const num = document.createElement("div");
+      num.className = "num";
+      num.textContent = pg + 1;
+      it.append(cornice, num);
+      return it;
+    });
+    griglia.replaceChildren(indicatore, ...els);
+    $("#ri-info").textContent = S.id === null ? "Nessun PDF aperto" : `${S.nome}  –  ${S.ordine.length} pagine`;
+  }
+
+  function segnaSelezione() {
+    elementi().forEach((el, pos) => el.setAttribute("aria-selected", String(S.sel.has(pos))));
+  }
+
+  function mostraPrimaSelezionata() {
+    const prima = Math.min(...S.sel);
+    const el = elementi()[prima];
+    if (el) el.scrollIntoView({ block: "nearest" });
+  }
+
+  function richiediMiniatura(pg) {
+    if (S.cache.has(pg) || S.inVolo.has(pg)) return;
+    S.inVolo.add(pg);
+    const tk = S.token;
+    Motore.chiama("miniatura", [S.id, pg, LARGHEZZA_MINIATURA]).then((r) => {
+      if (tk !== S.token) return;
+      const url = URL.createObjectURL(new Blob([r.img], { type: r.tipo }));
+      S.cache.set(pg, url);
+      griglia.querySelectorAll(`.mini[data-pg="${pg}"] img`).forEach((i) => (i.src = url));
+    }).catch(() => { if (tk === S.token) S.inVolo.delete(pg); });
+  }
+
+  // ── apertura ────────────────────────────────────────────────────────────────
+  async function apri(file) {
+    if (!file) return;
+    try {
+      const bytes = await leggiFile(file);
+      const r = await conOccupato("Apro il PDF…", () => Motore.chiama("apri", [bytes], [bytes.buffer]));
+      if (r.protetto) { notifica(`${file.name} è protetto da password: non posso aprirlo.`, true); return; }
+      const { dim } = await Motore.chiama("dimensioniTutte", [r.id]);
+      if (S.id !== null) Motore.chiama("chiudi", [S.id]);
+      S.cache.forEach((url) => URL.revokeObjectURL(url));
+      S.cache.clear(); S.inVolo.clear(); S.token++;
+      S.id = r.id; S.nome = file.name; S.dim = dim;
+      S.ordine = dim.map((_, i) => i);
+      S.sel = new Set(); S.ancora = -1;
+      disegna();
+    } catch (e) {
+      notifica(`${file.name}: ${e.message}`, true);
+    }
+  }
+
+  // ── selezione ───────────────────────────────────────────────────────────────
+  function aggiornaBottoni() {
+    const m = $("#ri-multi"), i = $("#ri-intervallo");
+    m.setAttribute("aria-pressed", String(S.multi));
+    i.setAttribute("aria-pressed", String(S.armaIntervallo));
+  }
+
+  griglia.addEventListener("click", (e) => {
+    if (ignoraClick) { ignoraClick = false; return; }
+    const it = e.target.closest(".mini");
+    if (!it) return;
+    const pos = +it.dataset.pos;
+    if (e.shiftKey || S.armaIntervallo) {
+      const a = S.ancora >= 0 ? S.ancora : pos;
+      S.sel = new Set();
+      for (let k = Math.min(a, pos); k <= Math.max(a, pos); k++) S.sel.add(k);
+      S.armaIntervallo = false;
+      aggiornaBottoni();
+    } else if (e.ctrlKey || e.metaKey || S.multi) {
+      S.sel.has(pos) ? S.sel.delete(pos) : S.sel.add(pos);
+      S.ancora = pos;
+    } else {
+      S.sel = new Set([pos]);
+      S.ancora = pos;
+    }
+    segnaSelezione();
+  });
+
+  $("#ri-multi").addEventListener("click", () => {
+    S.multi = !S.multi;
+    if (S.multi) S.armaIntervallo = false;
+    aggiornaBottoni();
+  });
+  $("#ri-intervallo").addEventListener("click", () => {
+    S.armaIntervallo = !S.armaIntervallo;
+    aggiornaBottoni();
+    if (S.armaIntervallo) notifica(S.ancora >= 0 ? "Tocca l'ultima pagina dell'intervallo." : "Tocca la pagina iniziale e poi di nuovo Intervallo.");
+  });
+
+  // ── spostamento, eliminazione ────────────────────────────────────────────────
+  // Ogni blocco contiguo di pagine selezionate scavalca una pagina non selezionata.
+  function sposta(delta) {
+    if (!S.sel.size) return;
+    const ord = S.ordine.slice();
+    const s = ord.map((_, pos) => S.sel.has(pos));
+    if (delta < 0) {
+      for (let i = 1; i < ord.length; i++) {
+        if (s[i] && !s[i - 1]) { [ord[i - 1], ord[i]] = [ord[i], ord[i - 1]]; [s[i - 1], s[i]] = [s[i], s[i - 1]]; }
+      }
+    } else {
+      for (let i = ord.length - 2; i >= 0; i--) {
+        if (s[i] && !s[i + 1]) { [ord[i + 1], ord[i]] = [ord[i], ord[i + 1]]; [s[i + 1], s[i]] = [s[i], s[i + 1]]; }
+      }
+    }
+    S.ordine = ord;
+    S.sel = new Set(s.flatMap((v, pos) => (v ? [pos] : [])));
+    S.ancora = Math.min(...S.sel);
+    disegna();
+    mostraPrimaSelezionata();
+  }
+
+  async function elimina() {
+    if (!S.sel.size) return;
+    if (!(await conferma(`Elimino ${S.sel.size} pagina/e?`, "Elimina"))) return;
+    S.ordine = S.ordine.filter((_, pos) => !S.sel.has(pos));
+    S.sel = new Set();
+    S.ancora = -1;
+    disegna();
+  }
+
+  // Sposta le posizioni `blocco` (ordinate) davanti alla posizione `b` (0..n).
+  function muovi(blocco, b) {
+    const set = new Set(blocco);
+    const prima = blocco.filter((p) => p < b).length;
+    const resto = S.ordine.filter((_, p) => !set.has(p));
+    const ib = b - prima;
+    const mossi = blocco.map((p) => S.ordine[p]);
+    const nuovo = [...resto.slice(0, ib), ...mossi, ...resto.slice(ib)];
+    if (nuovo.every((v, i) => v === S.ordine[i])) return;
+    S.ordine = nuovo;
+    S.sel = new Set(mossi.map((_, k) => ib + k));
+    S.ancora = ib;
+    disegna();
+    mostraPrimaSelezionata();
+  }
+
+  // ── trascinamento: mouse subito, dito dopo pressione lunga ───────────────────
+  function posizioneInserimento(x, y) {
+    const els = elementi();
+    let migliore = -1, dMin = Infinity, cx = 0;
+    els.forEach((el, i) => {
+      const r = el.getBoundingClientRect();
+      const dx = Math.max(r.left - x, 0, x - r.right);
+      const dy = Math.max(r.top - y, 0, y - r.bottom);
+      const d = dx * dx + dy * dy;
+      if (d < dMin) { dMin = d; migliore = i; cx = (r.left + r.right) / 2; }
+    });
+    if (migliore < 0) return 0;
+    return x < cx ? migliore : migliore + 1;
+  }
+
+  function mostraIndicatore(b) {
+    const els = elementi();
+    if (!els.length) return;
+    const r = els[Math.min(b, els.length - 1)].getBoundingClientRect();
+    const g = griglia.getBoundingClientRect();
+    indicatore.style.left = (b < els.length ? r.left - 5 : r.right + 1) - g.left + "px";
+    indicatore.style.top = r.top - g.top + "px";
+    indicatore.style.height = r.height + "px";
+    indicatore.hidden = false;
+  }
+
+  function aggiornaDrag() {
+    P.fant.style.left = P.x - P.dx + "px";
+    P.fant.style.top = P.y - P.dy + "px";
+    P.bordo = posizioneInserimento(P.x, P.y);
+    mostraIndicatore(P.bordo);
+  }
+
+  function scorriAutomatico() {
+    if (!P || !P.attivo) return;
+    const r = scorrevole.getBoundingClientRect();
+    const zona = 70;
+    if (P.y < r.top + zona) scorrevole.scrollTop -= 4 + 14 * Math.min(1, (r.top + zona - P.y) / zona);
+    else if (P.y > r.bottom - zona) scorrevole.scrollTop += 4 + 14 * Math.min(1, (P.y - (r.bottom - zona)) / zona);
+    aggiornaDrag();
+    P.raf = requestAnimationFrame(scorriAutomatico);
+  }
+
+  function iniziaDrag() {
+    if (!P || P.attivo) return;
+    clearTimeout(P.timer);
+    P.attivo = true;
+    // se la pagina trascinata fa parte della selezione si sposta tutta la selezione, altrimenti solo lei
+    if (!S.sel.has(P.pos)) { S.sel = new Set([P.pos]); S.ancora = P.pos; segnaSelezione(); }
+    P.blocco = [...S.sel].sort((a, b) => a - b);
+    const els = elementi();
+    P.blocco.forEach((p) => els[p].classList.add("in-volo"));
+    const sorgente = els[P.pos];
+    const r = sorgente.querySelector(".cornice").getBoundingClientRect();
+    const f = document.createElement("div");
+    f.className = "fantasma";
+    f.style.width = r.width + "px";
+    f.append(sorgente.querySelector("img").cloneNode());
+    if (P.blocco.length > 1) {
+      const c = document.createElement("span");
+      c.className = "conta";
+      c.textContent = P.blocco.length;
+      f.append(c);
+    }
+    document.body.append(f);
+    P.fant = f;
+    P.dx = P.x - r.left;
+    P.dy = P.y - r.top;
+    document.body.style.cursor = "grabbing";
+    if (P.tocco && navigator.vibrate) navigator.vibrate(15);
+    aggiornaDrag();
+    P.raf = requestAnimationFrame(scorriAutomatico);
+  }
+
+  function fineGesto(applica) {
+    const p = P;
+    P = null;
+    if (!p) return;
+    clearTimeout(p.timer);
+    if (!p.attivo) return;
+    cancelAnimationFrame(p.raf);
+    p.fant.remove();
+    indicatore.hidden = true;
+    document.body.style.cursor = "";
+    elementi().forEach((el) => el.classList.remove("in-volo"));
+    ignoraClick = true;                       // il click che segue il rilascio non deve cambiare la selezione
+    setTimeout(() => (ignoraClick = false), 0);
+    if (applica) muovi(p.blocco, p.bordo);
+  }
+
+  griglia.addEventListener("pointerdown", (e) => {
+    const it = e.target.closest(".mini");
+    if (!it || (e.pointerType === "mouse" && e.button !== 0)) return;
+    P = { id: e.pointerId, pos: +it.dataset.pos, x0: e.clientX, y0: e.clientY, x: e.clientX, y: e.clientY,
+          tocco: e.pointerType !== "mouse", attivo: false, timer: null };
+    if (P.tocco) P.timer = setTimeout(iniziaDrag, ATTESA_TOCCO);
+  });
+  document.addEventListener("pointermove", (e) => {
+    if (!P || e.pointerId !== P.id) return;
+    P.x = e.clientX; P.y = e.clientY;
+    if (!P.attivo) {
+      const d = Math.hypot(P.x - P.x0, P.y - P.y0);
+      if (!P.tocco && d > SOGLIA_MOUSE) iniziaDrag();
+      else if (P.tocco && d > SOGLIA_TOCCO) fineGesto(false);     // il dito scorre: non è un trascinamento
+      return;
+    }
+    e.preventDefault();
+    aggiornaDrag();
+  });
+  document.addEventListener("pointerup", (e) => { if (P && e.pointerId === P.id) fineGesto(true); });
+  document.addEventListener("pointercancel", (e) => { if (P && e.pointerId === P.id) fineGesto(false); });
+  document.addEventListener("touchmove", (e) => { if (P && P.attivo) e.preventDefault(); }, { passive: false });
+  griglia.addEventListener("contextmenu", (e) => e.preventDefault());   // pressione lunga su Android
+  griglia.addEventListener("dragstart", (e) => e.preventDefault());
+
+  // ── salvataggio ──────────────────────────────────────────────────────────────
+  async function esegui(indici, suffisso) {
+    if (!indici.length) { notifica("Non ci sono pagine da salvare.", true); return; }
+    const base = S.nome.replace(/\.pdf$/i, "");
+    const dest = await scegliDestinazione(`${base}${suffisso}.pdf`);
+    if (!dest) return;
+    try {
+      const r = await conOccupato("Salvo il PDF…", () => Motore.chiama("estrai", [S.id, indici]));
+      const nome = await scriviDestinazione(dest, r.bytes);
+      notifica(`${r.numPagine} pagine salvate: ${nome}`);
+    } catch (e) {
+      notifica(e.message, true);
+    }
+  }
+
+  // Salva tutte le pagine nell'ordine mostrato
+  function salva() {
+    if (S.id === null) return;
+    return esegui(S.ordine.slice(), "_riordinato");
+  }
+
+  // Salva solo le pagine selezionate, nell'ordine mostrato
+  function esporta() {
+    if (!S.sel.size) { notifica("Seleziona almeno una pagina.", true); return; }
+    const pos = [...S.sel].sort((a, b) => a - b);
+    return esegui(pos.map((p) => S.ordine[p]), "_selezione");
+  }
+
+  $("#ri-apri").addEventListener("click", () => $("#ri-input").click());
+  $("#ri-input").addEventListener("change", async (e) => {
+    const f = e.target.files[0];
+    e.target.value = "";
+    await apri(f);
+  });
+  $("#ri-su").addEventListener("click", () => sposta(-1));
+  $("#ri-giu").addEventListener("click", () => sposta(+1));
+  $("#ri-elimina").addEventListener("click", elimina);
+  $("#ri-salva").addEventListener("click", salva);
+  $("#ri-esporta").addEventListener("click", esporta);
+  abilitaTrascinamentoFile($("#tab-riordina"), (files) => apri(files[0]));
+  return { stato: S }; // esposto per le prove automatiche
+})();
+
+// ═══════════════════════════════════════════════════════════════════════════
+//  MODULO SOSTITUISCI
+// ═══════════════════════════════════════════════════════════════════════════
+const Sostituisci = (() => {
+  // sost: posizione (0-based) → { id: documento sostituto nel motore, nome, dim: [pw, ph] della prima pagina usata, pagine: indici 0-based delle pagine del sostituto da usare }.
+  // Le sostituzioni restano in sospeso e si applicano a una copia al momento di salvare.
+  const S = { id: null, nome: "", dim: [], sost: new Map(), pos: -1, token: 0 };
+  const griglia = $("#so-griglia");
+  const mini = creaMiniature(griglia, () => Math.round(170 * Math.min(window.devicePixelRatio || 1, 2)));
+
+  // pagine aggiunte in più rispetto all'originale (un sostituto con più pagine allunga il documento)
+  const extra = () => [...S.sost.values()].reduce((somma, v) => somma + v.pagine.length - 1, 0);
+  // [1, 2, 3, 5] → "2-4, 6" (numeri 1-based)
+  function descriviPagine(pagine) {
+    const parti = [];
+    for (let i = 0; i < pagine.length; ) {
+      let j = i;
+      while (j + 1 < pagine.length && pagine[j + 1] === pagine[j] + 1) j++;
+      parti.push(j > i ? `${pagine[i] + 1}-${pagine[j] + 1}` : String(pagine[i] + 1));
+      i = j + 1;
+    }
+    return parti.join(", ");
+  }
+
+  function aggiornaInfo() {
+    $("#so-info").textContent = S.id === null
+      ? "Apri un PDF, poi scegli una pagina per sostituirla."
+      : `${S.nome}  –  ${S.dim.length} pagine  ·  scegli una miniatura per sostituire quella pagina`
+        + (S.sost.size ? `  ·  ${S.sost.size} sostituite` : "")
+        + (extra() ? `  ·  il PDF avrà ${S.dim.length + extra()} pagine` : "");
+  }
+
+  function aggiornaCella(cella, pos) {
+    const s = S.sost.get(pos);
+    const [pw, ph] = s ? s.dim : S.dim[pos];
+    cella.classList.toggle("sostituita", !!s);
+    cella.querySelector(".cornice").style.aspectRatio = `${pw} / ${ph}`;
+    cella.querySelector(".num").textContent = s
+      ? `${pos + 1} ↻ ${s.nome}` + (s.pagine.length > 1 ? ` (${s.pagine.length} pag.)` : "")
+      : String(pos + 1);
+    const descr = s
+      ? `Pagina ${pos + 1}, sostituita da ${s.nome}` + (s.pagine.length > 1 || s.pagine[0] > 0 ? `, pagine ${descriviPagine(s.pagine)}` : "")
+      : `Pagina ${pos + 1}`;
+    cella.title = descr;
+    const img = cella.querySelector("img");
+    img.alt = descr;
+    img.removeAttribute("src");
+    mini.osserva(img, s ? s.id : S.id, s ? s.pagine[0] : pos);
+  }
+
+  function disegna() {
+    mini.azzera();
+    const celle = S.dim.map((_, pos) => {
+      const b = document.createElement("button");
+      b.type = "button";
+      b.className = "pg-cella";
+      b.dataset.pos = pos;
+      const cornice = document.createElement("div");
+      cornice.className = "cornice";
+      const img = document.createElement("img");
+      img.draggable = false;
+      cornice.append(img);
+      const num = document.createElement("div");
+      num.className = "num";
+      b.append(cornice, num);
+      aggiornaCella(b, pos);
+      return b;
+    });
+    griglia.replaceChildren(...celle);
+    aggiornaInfo();
+  }
+
+  function chiudiTutto() {
+    if (S.id !== null) Motore.chiama("chiudi", [S.id]);
+    S.sost.forEach((v) => Motore.chiama("chiudi", [v.id]));
+    mini.azzera();
+  }
+
+  async function apri(file) {
+    if (!file) return;
+    try {
+      const bytes = await leggiFile(file);
+      const r = await conOccupato("Apro il PDF…", () => Motore.chiama("apri", [bytes], [bytes.buffer]));
+      if (r.protetto) { notifica(`${file.name} è protetto da password: non posso aprirlo.`, true); return; }
+      const { dim } = await Motore.chiama("dimensioniTutte", [r.id]);
+      chiudiTutto();
+      S.token++;
+      S.id = r.id; S.nome = file.name; S.dim = dim;
+      S.sost = new Map(); S.pos = -1;
+      disegna();
+    } catch (e) {
+      notifica(`${file.name}: ${e.message}`, true);
+    }
+  }
+
+  // Chiede quali pagine del sostituto usare (numeri e intervalli come in Dividi). null se annullato.
+  async function chiediPagine(nome, totale) {
+    let errore = "";
+    for (let iniziale = "1"; ; ) {
+      const testo = await chiediTesto(`${errore}Pagine di ${nome} da usare (1–${totale})`, iniziale);
+      if (testo === null) return null;
+      try { return parseRange(testo, totale); }
+      catch (e) { errore = e.message + " "; iniziale = testo; }
+    }
+  }
+
+  // Le pagine scelte del file prendono il posto della pagina S.pos: la prima la sostituisce, le altre la seguono
+  async function sostituisci(file) {
+    const pos = S.pos, tk = S.token;
+    if (!file || S.id === null || pos < 0) return;
+    try {
+      const bytes = await leggiFile(file);
+      const r = await conOccupato("Apro il PDF sostituto…", () => Motore.chiama("apri", [bytes], [bytes.buffer]));
+      if (r.protetto) { notifica(`${file.name} è protetto da password: non posso usarlo.`, true); return; }
+      if (tk !== S.token) { Motore.chiama("chiudi", [r.id]); return; }   // nel frattempo è stato aperto un altro PDF
+      if (r.numPagine < 1) {
+        Motore.chiama("chiudi", [r.id]);
+        notifica("Il PDF sostituto è vuoto.", true);
+        return;
+      }
+      let pagine = [0];
+      if (r.numPagine > 1) {
+        pagine = await chiediPagine(file.name, r.numPagine);
+        if (!pagine || tk !== S.token) { Motore.chiama("chiudi", [r.id]); return; }
+      }
+      const { pw, ph } = await Motore.chiama("dimensioni", [r.id, pagine[0]]);
+      const vecchio = S.sost.get(pos);
+      S.sost.set(pos, { id: r.id, nome: file.name, dim: [pw, ph], pagine });
+      if (vecchio) Motore.chiama("chiudi", [vecchio.id]);
+      aggiornaCella(griglia.children[pos], pos);
+      aggiornaInfo();
+      notifica(pagine.length > 1 ? `Pagina ${pos + 1} sostituita da ${pagine.length} pagine.` : `Pagina ${pos + 1} sostituita.`);
+    } catch (e) {
+      notifica(`${file.name}: ${e.message}`, true);
+    }
+  }
+
+  async function salva() {
+    if (S.id === null) { notifica("Nessun PDF aperto.", true); return; }
+    const base = S.nome.replace(/\.pdf$/i, "");
+    const dest = await scegliDestinazione(`${base}_sostituito.pdf`);
+    if (!dest) return;
+    try {
+      const sostituzioni = [...S.sost].map(([pos, v]) => [pos, v.id, v.pagine]).sort((a, b) => a[0] - b[0]);
+      const r = await conOccupato("Salvo il PDF…", () => Motore.chiama("sostituisciESalva", [S.id, sostituzioni]));
+      const nome = await scriviDestinazione(dest, r.bytes);
+      notifica(`PDF salvato: ${nome} (${r.numPagine} pagine)`);
+    } catch (e) {
+      notifica(e.message, true);
+    }
+  }
+
+  griglia.addEventListener("click", (e) => {
+    const c = e.target.closest(".pg-cella");
+    if (!c) return;
+    S.pos = +c.dataset.pos;
+    $("#so-sost-input").click();
+  });
+  $("#so-apri").addEventListener("click", () => $("#so-input").click());
+  $("#so-input").addEventListener("change", async (e) => {
+    const f = e.target.files[0];
+    e.target.value = "";
+    await apri(f);
+  });
+  $("#so-sost-input").addEventListener("change", async (e) => {
+    const f = e.target.files[0];
+    e.target.value = "";
+    await sostituisci(f);
+  });
+  $("#so-salva").addEventListener("click", salva);
+  abilitaTrascinamentoFile($("#tab-sostituisci"), (files) => apri(files[0]));
+  aggiornaInfo();
+  return { stato: S }; // esposto per le prove automatiche
+})();
+
+// ═══════════════════════════════════════════════════════════════════════════
+//  MODULO DIVIDI
+// ═══════════════════════════════════════════════════════════════════════════
+
+// Testo tipo "1-3; 5; 7-9" (separatori ; o ,) → indici 0-based ordinati e senza doppioni.
+// Diversamente dalla Suite, che scarta in silenzio le pagine fuori dal documento
+// e accetta intervalli al contrario senza produrre nulla, qui ogni anomalia dà un errore chiaro.
+function parseRange(testo, totale) {
+  const formato = "usa numeri e trattini, ad esempio 1-3; 5; 7-9.";
+  const pezzi = testo.replace(/[\u2012-\u2015\u2212]/g, "-").split(/[;,]/).map((p) => p.trim()).filter(Boolean);
+  if (!pezzi.length) throw new Error(`Intervallo vuoto: ${formato}`);
+  const numero = (s, pezzo) => {
+    if (!/^\d+$/.test(s)) throw new Error(`"${pezzo}" non è valido: ${formato}`);
+    const n = parseInt(s, 10);
+    if (n < 1 || n > totale) throw new Error(`La pagina ${n} non esiste: le pagine vanno da 1 a ${totale}.`);
+    return n;
+  };
+  const indici = new Set();
+  for (const pezzo of pezzi) {
+    const parti = pezzo.split("-").map((s) => s.trim());
+    if (parti.length === 1) {
+      indici.add(numero(parti[0], pezzo) - 1);
+    } else if (parti.length === 2) {
+      const a = numero(parti[0], pezzo), b = numero(parti[1], pezzo);
+      if (a > b) throw new Error(`L'intervallo "${pezzo}" va al contrario: scrivi ${b}-${a}.`);
+      for (let n = a; n <= b; n++) indici.add(n - 1);
+    } else {
+      throw new Error(`"${pezzo}" non è valido: ${formato}`);
+    }
+  }
+  return [...indici].sort((x, y) => x - y);
+}
+
+const Dividi = (() => {
+  const LARGHEZZE = [60, 80, 100, 130, 170, 220, 280, 360, 440];   // larghezza delle celle in px, una per livello di zoom
+  const S = { id: null, nome: "", dim: [], z: window.matchMedia("(max-width: 719px)").matches ? 2 : 3 };
+  const griglia = $("#di-griglia");
+  // larghezza richiesta al motore, a gradini di 40 px così gli zoom vicini condividono la cache
+  const mini = creaMiniature(griglia, () => Math.ceil(LARGHEZZE[S.z] * Math.min(window.devicePixelRatio || 1, 2) / 40) * 40);
+  const caselle = () => $$("input[type=checkbox]", griglia);
+
+  function aggiornaInfo() {
+    if (S.id === null) { $("#di-info").textContent = "Nessun PDF aperto."; return; }
+    const n = caselle().filter((c) => c.checked).length;
+    $("#di-info").textContent = `${S.nome}  –  ${S.dim.length} pagine` + (n ? `  ·  ${n} selezionate` : "");
+  }
+
+  function disegna() {
+    mini.azzera();
+    const celle = S.dim.map(([pw, ph], i) => {
+      const lab = document.createElement("label");
+      lab.className = "pg-cella";
+      const cornice = document.createElement("div");
+      cornice.className = "cornice";
+      cornice.style.aspectRatio = `${pw} / ${ph}`;
+      const img = document.createElement("img");
+      img.alt = `Pagina ${i + 1}`;
+      img.draggable = false;
+      cornice.append(img);
+      const riga = document.createElement("div");
+      riga.className = "riga";
+      const cb = document.createElement("input");
+      cb.type = "checkbox";
+      const t = document.createElement("span");
+      t.className = "num";
+      t.textContent = `Pag. ${i + 1}`;
+      riga.append(cb, t);
+      lab.append(cornice, riga);
+      mini.osserva(img, S.id, i);
+      return lab;
+    });
+    griglia.replaceChildren(...celle);
+    griglia.style.setProperty("--w", LARGHEZZE[S.z] + "px");
+    aggiornaInfo();
+  }
+
+  function chiudiDoc() {
+    if (S.id !== null) Motore.chiama("chiudi", [S.id]);
+    mini.azzera();
+  }
+
+  async function apri(file) {
+    if (!file) return;
+    try {
+      const bytes = await leggiFile(file);
+      const r = await conOccupato("Apro il PDF…", () => Motore.chiama("apri", [bytes], [bytes.buffer]));
+      if (r.protetto) { notifica(`${file.name} è protetto da password: non posso aprirlo.`, true); return; }
+      const { dim } = await Motore.chiama("dimensioniTutte", [r.id]);
+      chiudiDoc();
+      S.id = r.id; S.nome = file.name; S.dim = dim;
+      disegna();
+    } catch (e) {
+      notifica(`${file.name}: ${e.message}`, true);
+    }
+  }
+
+  function segnaTutte(valore) {
+    for (const c of caselle()) {
+      c.checked = valore;
+      c.closest(".pg-cella").classList.toggle("sel", valore);
+    }
+    aggiornaInfo();
+  }
+
+  // Lo zoom cambia solo la larghezza delle celle e ricarica le miniature in vista:
+  // le caselle spuntate restano come sono (la Suite le azzera).
+  function zoom(delta) {
+    const z = Math.max(0, Math.min(LARGHEZZE.length - 1, S.z + delta));
+    if (z === S.z) return;
+    S.z = z;
+    griglia.style.setProperty("--w", LARGHEZZE[z] + "px");
+    mini.ricarica();
+  }
+
+  async function esporta() {
+    if (S.id === null) { notifica("Prima apri un PDF.", true); return; }
+    // Priorità: caselle > intervallo scritto
+    let scelte = caselle().flatMap((c, i) => (c.checked ? [i] : []));
+    const testo = $("#di-range").value.trim();
+    if (!scelte.length && testo) {
+      try { scelte = parseRange(testo, S.dim.length); }
+      catch (e) { notifica(e.message, true); return; }
+    }
+    if (!scelte.length) { notifica("Seleziona almeno una pagina.", true); return; }
+    const base = S.nome.replace(/\.pdf$/i, "");
+    const dest = await scegliDestinazione(`${base}_estratto.pdf`);
+    if (!dest) return;
+    try {
+      const r = await conOccupato("Esporto le pagine…", () => Motore.chiama("estrai", [S.id, scelte]));
+      const nome = await scriviDestinazione(dest, r.bytes);
+      notifica(`${r.numPagine} pagine salvate: ${nome}`);
+    } catch (e) {
+      notifica(e.message, true);
+    }
+  }
+
+  griglia.addEventListener("change", (e) => {
+    const c = e.target.closest(".pg-cella");
+    if (c) c.classList.toggle("sel", e.target.checked);
+    aggiornaInfo();
+  });
+  $("#di-apri").addEventListener("click", () => $("#di-input").click());
+  $("#di-input").addEventListener("change", async (e) => {
+    const f = e.target.files[0];
+    e.target.value = "";
+    await apri(f);
+  });
+  $("#di-tutte").addEventListener("click", () => segnaTutte(true));
+  $("#di-nessuna").addEventListener("click", () => segnaTutte(false));
+  $("#di-zmeno").addEventListener("click", () => zoom(-1));
+  $("#di-zpiu").addEventListener("click", () => zoom(+1));
+  $("#di-esporta").addEventListener("click", esporta);
+  $("#di-range").addEventListener("keydown", (e) => { if (e.key === "Enter") esporta(); });
+  abilitaTrascinamentoFile($("#tab-dividi"), (files) => apri(files[0]));
+  aggiornaInfo();
+  return { stato: S }; // esposto per le prove automatiche
+})();
+
+// ═══════════════════════════════════════════════════════════════════════════
+//  MODULO CONVERTI (non usa il motore PDF: marked, mammoth e JSZip sono caricati alla prima conversione)
+// ═══════════════════════════════════════════════════════════════════════════
+const Converti = (() => {
+  const S = { nome: "", bytes: null };
+  const TIPI = {
+    html: { descrizione: "HTML", mime: "text/html", est: ".html" },
+    epub: { descrizione: "EPUB", mime: "application/epub+zip", est: ".epub" },
+  };
+  let libsPronte = false;
+
+  const estensione = (nome) => (nome.match(/\.[^.]+$/) || [""])[0].toLowerCase();
+  const senzaEstensione = (nome) => nome.replace(/\.[^.]+$/, "");
+  const esc = (t) => String(t).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]);
+  const eFileConvertibile = (f) => /\.(md|markdown|docx|doc)$/i.test(f.name);
+
+  function caricaLibs() {
+    if (libsPronte) return;
+    for (const id of ["marked", "mammoth", "jszip"]) {
+      const s = document.createElement("script");
+      s.textContent = $("#src-" + id).textContent;
+      document.head.append(s);
+      s.remove();
+    }
+    if (!window.marked || !window.mammoth || !window.JSZip) throw new Error("Librerie di conversione non caricate");
+    libsPronte = true;
+  }
+
+  // Come la Suite: prima UTF-8, poi cp1252 (il BOM viene tolto dal decodificatore).
+  function decodificaTesto(bytes) {
+    try { return new TextDecoder("utf-8", { fatal: true }).decode(bytes); }
+    catch { return new TextDecoder("windows-1252").decode(bytes); }
+  }
+
+  async function aHtml(nome, bytes) {
+    caricaLibs();
+    const est = estensione(nome);
+    if (est === ".md" || est === ".markdown") return await marked.parse(decodificaTesto(bytes), { gfm: true });
+    if (est === ".docx") {
+      const copia = bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength);
+      return (await mammoth.convertToHtml({ arrayBuffer: copia })).value;
+    }
+    if (est === ".doc") throw new Error("I file .doc si convertono solo nella Suite Python (serve LibreOffice).");
+    throw new Error(`Formato di input non supportato: ${est || "senza estensione"}`);
+  }
+
+  function documentoHtml(html, titolo) {
+    return `<!DOCTYPE html>\n<html lang="it">\n<head>\n<meta charset="utf-8">\n<meta name="viewport" content="width=device-width, initial-scale=1">\n<title>${esc(titolo)}</title>\n</head>\n<body>\n${html}\n</body>\n</html>\n`;
+  }
+
+  function uuid() {
+    const b = crypto.getRandomValues(new Uint8Array(16));
+    b[6] = (b[6] & 0x0f) | 0x40;
+    b[8] = (b[8] & 0x3f) | 0x80;
+    const h = [...b].map((x) => x.toString(16).padStart(2, "0")).join("");
+    return `${h.slice(0, 8)}-${h.slice(8, 12)}-${h.slice(12, 16)}-${h.slice(16, 20)}-${h.slice(20)}`;
+  }
+
+  // EPUB 3 a capitolo unico con indice dai titoli h1-h6. Il contenuto passa da DOMParser e XMLSerializer
+  // per diventare XHTML ben formato (tag vuoti chiusi, entità corrette).
+  async function creaEpub(html, titolo) {
+    caricaLibs();
+    const doc = new DOMParser().parseFromString("<!DOCTYPE html><html><body>" + html + "</body></html>", "text/html");
+    const usati = new Set([...doc.querySelectorAll("[id]")].map((e) => e.id));
+    const voci = [...doc.body.querySelectorAll("h1,h2,h3,h4,h5,h6")].map((h, i) => {
+      if (!h.id) {
+        let id = "h" + i;
+        while (usati.has(id)) id += "_";
+        h.id = id;
+        usati.add(id);
+      }
+      return { livello: Number(h.tagName[1]), id: h.id, testo: h.textContent.replace(/\s+/g, " ").trim() || "(senza titolo)" };
+    });
+    let corpo;
+    try {
+      corpo = new XMLSerializer().serializeToString(doc.body).replace(/^<body[^>]*>/, "").replace(/<\/body>$/, "");
+    } catch (e) {
+      throw new Error("Il contenuto non si può convertire in XHTML: " + e.message);
+    }
+
+    const radice = { figli: [] };
+    const pila = [{ livello: 0, figli: radice.figli }];
+    for (const v of voci) {
+      while (pila[pila.length - 1].livello >= v.livello) pila.pop();
+      const n = { ...v, figli: [] };
+      pila[pila.length - 1].figli.push(n);
+      pila.push(n);
+    }
+    const albero = radice.figli.length ? radice.figli : [{ livello: 1, id: "", testo: titolo, figli: [] }];
+    const href = (n) => "cap.xhtml" + (n.id ? "#" + n.id : "");
+    const navOl = (nodi) => "<ol>" + nodi.map((n) => `<li><a href="${esc(href(n))}">${esc(n.testo)}</a>${n.figli.length ? navOl(n.figli) : ""}</li>`).join("") + "</ol>";
+    let ordine = 0, profondita = 0;
+    const ncxPunti = (nodi, liv) => {
+      if (nodi.length) profondita = Math.max(profondita, liv);
+      return nodi.map((n) => {
+        const o = ++ordine;
+        return `<navPoint id="np${o}" playOrder="${o}"><navLabel><text>${esc(n.testo)}</text></navLabel><content src="${esc(href(n))}"/>${ncxPunti(n.figli, liv + 1)}</navPoint>`;
+      }).join("");
+    };
+    const punti = ncxPunti(albero, 1);
+    const id = "urn:uuid:" + uuid();
+    const NS = 'xmlns="http://www.w3.org/1999/xhtml" xmlns:epub="http://www.idpf.org/2007/ops"';
+    const XML = '<?xml version="1.0" encoding="utf-8"?>\n';
+
+    const zip = new JSZip();
+    zip.file("mimetype", "application/epub+zip", { compression: "STORE" });
+    zip.file("META-INF/container.xml", XML + '<container version="1.0" xmlns="urn:oasis:names:tc:opendocument:xmlns:container"><rootfiles><rootfile full-path="EPUB/content.opf" media-type="application/oebps-package+xml"/></rootfiles></container>');
+    zip.file("EPUB/content.opf", XML +
+      `<package xmlns="http://www.idpf.org/2007/opf" version="3.0" unique-identifier="id" xml:lang="it">` +
+      `<metadata xmlns:dc="http://purl.org/dc/elements/1.1/"><dc:identifier id="id">${id}</dc:identifier><dc:title>${esc(titolo)}</dc:title><dc:language>it</dc:language>` +
+      `<meta property="dcterms:modified">${new Date().toISOString().replace(/\.\d+Z$/, "Z")}</meta></metadata>` +
+      `<manifest><item id="cap" href="cap.xhtml" media-type="application/xhtml+xml"/><item id="nav" href="nav.xhtml" media-type="application/xhtml+xml" properties="nav"/><item id="ncx" href="toc.ncx" media-type="application/x-dtbncx+xml"/></manifest>` +
+      `<spine toc="ncx"><itemref idref="cap"/></spine></package>`);
+    zip.file("EPUB/cap.xhtml", XML + `<!DOCTYPE html>\n<html ${NS} lang="it" xml:lang="it"><head><meta charset="utf-8"/><title>${esc(titolo)}</title></head><body>${corpo}</body></html>`);
+    zip.file("EPUB/nav.xhtml", XML + `<!DOCTYPE html>\n<html ${NS} lang="it" xml:lang="it"><head><meta charset="utf-8"/><title>${esc(titolo)}</title></head><body><nav epub:type="toc" id="toc" role="doc-toc"><h1>${esc(titolo)}</h1>${navOl(albero)}</nav></body></html>`);
+    zip.file("EPUB/toc.ncx", XML +
+      `<ncx xmlns="http://www.daisy.org/z3986/2005/ncx/" version="2005-1"><head><meta name="dtb:uid" content="${id}"/><meta name="dtb:depth" content="${profondita}"/><meta name="dtb:totalPageCount" content="0"/><meta name="dtb:maxPageNumber" content="0"/></head>` +
+      `<docTitle><text>${esc(titolo)}</text></docTitle><navMap>${punti}</navMap></ncx>`);
+    return zip.generateAsync({ type: "uint8array", compression: "DEFLATE", compressionOptions: { level: 9 } });
+  }
+
+  const log = (riga) => { const l = $("#cv-log"); l.textContent += (l.textContent ? "\n" : "") + riga; };
+  const formato = () => $('input[name="cv-fmt"]:checked').value;
+
+  async function scegli(file) {
+    if (!file) return;
+    if (!eFileConvertibile(file)) { notifica("Scegli un file .md o .docx.", true); return; }
+    try {
+      S.bytes = new Uint8Array(await file.arrayBuffer());
+      S.nome = file.name;
+    } catch (e) {
+      notifica("Non riesco a leggere il file: " + e.message, true);
+      return;
+    }
+    $("#cv-file").textContent = `${S.nome} · ${formatoDim(S.bytes.length)}`;
+    $("#cv-converti").disabled = false;
+    $("#cv-log").textContent = "";
+  }
+
+  async function converti() {
+    if (!S.bytes) { notifica("Scegli prima un file.", true); return; }
+    const tipo = TIPI[formato()];
+    const titolo = senzaEstensione(S.nome);
+    const dest = await scegliDestinazione(titolo + tipo.est, tipo);
+    if (!dest) return;
+    $("#cv-log").textContent = "";
+    log("Input : " + S.nome);
+    log("Output: " + (dest.nome || dest.h.name));
+    try {
+      const html = await conOccupato("Converto il documento…", () => aHtml(S.nome, S.bytes));
+      const uscita = await conOccupato("Scrivo il file…", () =>
+        tipo === TIPI.html ? new TextEncoder().encode(documentoHtml(html, titolo)) : creaEpub(html, titolo));
+      const nome = await scriviDestinazione(dest, uscita);
+      log("✅ Conversione completata: " + nome);
+      notifica("File salvato: " + nome);
+    } catch (e) {
+      log("❌ Errore: " + e.message);
+      notifica(e.message, true);
+    }
+  }
+
+  $("#cv-scegli").addEventListener("click", () => $("#cv-input").click());
+  $("#cv-input").addEventListener("change", (e) => { const f = e.target.files[0]; e.target.value = ""; scegli(f); });
+  $("#cv-converti").addEventListener("click", converti);
+  abilitaTrascinamentoFile($("#tab-converti"), (files) => scegli(files[0]), eFileConvertibile);
+  return { stato: S, aHtml, creaEpub, documentoHtml }; // esposto per le prove automatiche
+})();
+
+// ═══════════════════════════════════════════════════════════════════════════
+//  MODULO ANNOTA: evidenziatura e testo libero come annotazioni vere del PDF
+// ═══════════════════════════════════════════════════════════════════════════
+const Annota = (() => {
+  const ZOOM_MIN = 0.3, ZOOM_MAX = 4.0, SOGLIA_TOCCO = 8;
+  const COLORI = {
+    evidenzia: [["Giallo", [1, 0.9, 0]], ["Verde", [0.4, 0.9, 0.3]], ["Rosa", [1, 0.5, 0.75]], ["Azzurro", [0.4, 0.8, 1]]],
+    testo: [["Nero", [0, 0, 0]], ["Blu", [0, 0.2, 0.8]], ["Rosso", [0.8, 0.1, 0.1]], ["Verde", [0.1, 0.5, 0.2]]],
+  };
+  const GUIDA = {
+    muovi: "Scorri e ingrandisci la pagina.",
+    evidenzia: "Trascina sul testo, oppure tocca una parola.",
+    testo: "Tocca il punto dove scrivere.",
+    seleziona: "Tocca un'evidenziatura o un testo per modificarlo o toglierlo.",
+  };
+  const S = { id: null, nome: "", n: 0, pagina: 0, zoom: 1, pw: 595, ph: 842, strumento: "muovi",
+              colore: { evidenzia: 0, testo: 0 }, annot: [], selNum: null, token: 0, url: null, modifiche: 0 };
+  const vista = $("#an-vista");
+  const ctx = document.createElement("canvas").getContext("2d");
+  let ov = null, anteprima = null, caselle = null, gesto = null;
+
+  const rgb = (c) => `rgb(${c.map((v) => Math.round(v * 255)).join(",")})`;
+  const dimensione = () => Number($("#an-dim").value);
+
+  // ── strumenti e colori ──────────────────────────────────────────────────────
+  function disegnaColori() {
+    const box = $("#an-colori");
+    box.replaceChildren();
+    const lista = COLORI[S.strumento];
+    $("#an-dim-et").hidden = S.strumento !== "testo";
+    $("#an-guida").textContent = GUIDA[S.strumento];
+    if (!lista) return;
+    lista.forEach(([nome, c], i) => {
+      const b = document.createElement("button");
+      b.type = "button";
+      b.className = "btn an-chip";
+      b.style.background = rgb(c);
+      b.title = nome;
+      b.setAttribute("aria-label", nome);
+      b.setAttribute("aria-pressed", String(i === S.colore[S.strumento]));
+      b.addEventListener("click", () => { S.colore[S.strumento] = i; disegnaColori(); });
+      box.append(b);
+    });
+  }
+
+  function impostaStrumento(nome) {
+    S.strumento = nome;
+    $$("#tab-annota [data-strumento]").forEach((b) => b.setAttribute("aria-pressed", String(b.dataset.strumento === nome)));
+    deseleziona();
+    if (ov) ov.className = nome === "muovi" ? "" : nome;
+    disegnaColori();
+    aggiornaCaselle();
+  }
+
+  // ── sovrapposizione sulla pagina ─────────────────────────────────────────────
+  const qui = (e) => {
+    const r = ov.getBoundingClientRect();
+    return [(e.clientX - r.left) / S.zoom, (e.clientY - r.top) / S.zoom];
+  };
+
+  function assicuraPagina() {
+    if ($("#an-img")) return;
+    vista.replaceChildren();
+    const box = document.createElement("div");
+    box.id = "an-pagina";
+    const img = document.createElement("img");
+    img.id = "an-img";
+    img.alt = "Pagina del PDF";
+    img.draggable = false;
+    ov = document.createElement("div");
+    ov.id = "an-ov";
+    ov.className = S.strumento === "muovi" ? "" : S.strumento;
+    anteprima = document.createElement("div");
+    caselle = document.createElement("div");
+    ov.append(anteprima, caselle);
+    box.append(img, ov);
+    vista.append(box);
+    collegaPuntatore();
+  }
+
+  function pulisciAnteprima() { if (anteprima) anteprima.replaceChildren(); }
+
+  function disegnaAnteprima(quads, colore) {
+    pulisciAnteprima();
+    for (const q of quads) {
+      const xs = [q[0], q[2], q[4], q[6]], ys = [q[1], q[3], q[5], q[7]];
+      const d = document.createElement("div");
+      d.className = "an-selr";
+      d.style.background = rgb(colore);
+      d.style.left = Math.min(...xs) * S.zoom + "px";
+      d.style.top = Math.min(...ys) * S.zoom + "px";
+      d.style.width = (Math.max(...xs) - Math.min(...xs)) * S.zoom + "px";
+      d.style.height = (Math.max(...ys) - Math.min(...ys)) * S.zoom + "px";
+      anteprima.append(d);
+    }
+  }
+
+  // Aree toccabili delle annotazioni, solo con lo strumento "Scegli"
+  function aggiornaCaselle() {
+    if (!caselle) return;
+    caselle.replaceChildren();
+    if (S.strumento !== "seleziona") return;
+    const ordinate = [...S.annot].sort((a, b) => (a.tipo === "FreeText") - (b.tipo === "FreeText"));
+    for (const a of ordinate) {
+      const b = document.createElement("button");
+      b.type = "button";
+      b.className = "an-hit";
+      b.dataset.num = a.num;
+      b.setAttribute("aria-pressed", String(a.num === S.selNum));
+      b.setAttribute("aria-label", a.tipo === "FreeText" ? "Testo: " + a.testo : "Evidenziatura");
+      const [x0, y0, x1, y1] = a.rect;
+      b.style.left = x0 * S.zoom + "px";
+      b.style.top = y0 * S.zoom + "px";
+      b.style.width = (x1 - x0) * S.zoom + "px";
+      b.style.height = (y1 - y0) * S.zoom + "px";
+      b.addEventListener("click", () => seleziona(a.num));
+      caselle.append(b);
+    }
+  }
+
+  function seleziona(num) {
+    S.selNum = num;
+    const a = S.annot.find((x) => x.num === num);
+    $("#an-az-et").textContent = a ? (a.tipo === "FreeText" ? "Testo scelto" : "Evidenziatura scelta") : "";
+    $("#an-modifica").hidden = !a || a.tipo !== "FreeText";
+    $("#an-azioni").hidden = !a;
+    aggiornaCaselle();
+  }
+  function deseleziona() {
+    S.selNum = null;
+    $("#an-azioni").hidden = true;
+    aggiornaCaselle();
+  }
+
+  // ── gesto sulla pagina ───────────────────────────────────────────────────────
+  // Anteprima della selezione mentre il dito si muove: una richiesta alla volta, conta l'ultima posizione.
+  async function aggiornaAnteprima(g) {
+    if (g.occupato) { g.sporco = true; return; }
+    g.occupato = true;
+    do {
+      g.sporco = false;
+      try {
+        const r = await Motore.chiama("selezioneTesto", [S.id, S.pagina, g.p0, g.p1]);
+        if (gesto === g) disegnaAnteprima(r.quads, COLORI.evidenzia[S.colore.evidenzia][1]);
+      } catch (_) { /* l'anteprima non è essenziale */ }
+    } while (g.sporco);
+    g.occupato = false;
+  }
+
+  function collegaPuntatore() {
+    ov.addEventListener("pointerdown", (e) => {
+      if (S.id === null || (e.pointerType === "mouse" && e.button !== 0)) return;
+      if (S.strumento === "seleziona") { if (e.target === ov) deseleziona(); return; }
+      if (S.strumento !== "evidenzia" && S.strumento !== "testo") return;
+      if (S.strumento === "evidenzia") ov.setPointerCapture(e.pointerId);
+      gesto = { id: e.pointerId, cx: e.clientX, cy: e.clientY, p0: qui(e), p1: qui(e), mosso: false, occupato: false, sporco: false };
+      if (S.strumento === "evidenzia") e.preventDefault();
+    });
+    ov.addEventListener("pointermove", (e) => {
+      const g = gesto;
+      if (!g || e.pointerId !== g.id) return;
+      g.p1 = qui(e);
+      if (!g.mosso && Math.hypot(e.clientX - g.cx, e.clientY - g.cy) > SOGLIA_TOCCO) g.mosso = true;
+      if (g.mosso && S.strumento === "evidenzia") aggiornaAnteprima(g);
+    });
+    ov.addEventListener("pointerup", async (e) => {
+      const g = gesto;
+      if (!g || e.pointerId !== g.id) return;
+      gesto = null;
+      pulisciAnteprima();
+      if (S.strumento === "evidenzia") await evidenzia(g.p0, g.mosso ? qui(e) : g.p0, g.mosso);
+      else if (S.strumento === "testo" && !g.mosso) await scrivi(g.p0);
+    });
+    ov.addEventListener("pointercancel", () => { gesto = null; pulisciAnteprima(); });
+  }
+
+  // ── lavoro sul documento ─────────────────────────────────────────────────────
+  async function evidenzia(p, q, trascinato) {
+    try {
+      const { quads } = await Motore.chiama("selezioneTesto", [S.id, S.pagina, p, q]);
+      if (!quads.length) { if (trascinato) notifica("Qui non c'è testo da evidenziare. Un PDF scansionato non ha testo selezionabile.", true); return; }
+      await Motore.chiama("aggiungiEvidenziatura", [S.id, S.pagina, quads, COLORI.evidenzia[S.colore.evidenzia][1]]);
+      S.modifiche++;
+      await renderizza();
+    } catch (e) {
+      notifica(e.message, true);
+    }
+  }
+
+  // Misura il testo con il font del browser (Helvetica o Arial: stesse larghezze) per dimensionare la casella
+  function misura(testo, dim, larghezzaMax) {
+    ctx.font = `${dim}px Helvetica, Arial, sans-serif`;
+    const utile = larghezzaMax - 12;
+    let righe = 0, piuLunga = 0;
+    for (const paragrafo of testo.split("\n")) {
+      let riga = "", n = 1;
+      for (const parola of paragrafo.split(/\s+/).filter(Boolean)) {
+        const prova = riga ? riga + " " + parola : parola;
+        if (riga && ctx.measureText(prova).width > utile) { piuLunga = Math.max(piuLunga, ctx.measureText(riga).width); riga = parola; n++; }
+        else riga = prova;
+      }
+      piuLunga = Math.max(piuLunga, ctx.measureText(riga).width);
+      righe += n;
+    }
+    return { w: Math.min(larghezzaMax, Math.ceil(piuLunga) + 16), h: Math.ceil(righe * dim * 1.2 + dim * 0.8) };
+  }
+
+  async function scrivi(p) {
+    const testo = await chiediTestoLungo("Testo da scrivere sulla pagina", "");
+    if (testo === null || !testo.trim()) return;
+    const dim = dimensione();
+    const { w, h } = misura(testo, dim, Math.max(60, Math.min(260, S.pw - 24)));
+    const x = Math.max(6, Math.min(p[0], S.pw - w - 6)), y = Math.max(6, Math.min(p[1], S.ph - h - 6));
+    try {
+      await Motore.chiama("aggiungiTesto", [S.id, S.pagina, [x, y, x + w, y + h], testo, dim, COLORI.testo[S.colore.testo][1]]);
+      S.modifiche++;
+      await renderizza();
+    } catch (e) {
+      notifica(e.message, true);
+    }
+  }
+
+  async function modifica() {
+    const a = S.annot.find((x) => x.num === S.selNum);
+    if (!a || a.tipo !== "FreeText") return;
+    const testo = await chiediTestoLungo("Modifica il testo", a.testo);
+    if (testo === null || !testo.trim()) return;
+    const [x0, y0, x1] = a.rect;
+    const { w, h } = misura(testo, a.dimensione || 14, Math.max(60, x1 - x0));
+    try {
+      await Motore.chiama("modificaTesto", [S.id, S.pagina, a.num, testo, [x0, y0, x0 + Math.max(w, x1 - x0), y0 + h]]);
+      S.modifiche++;
+      await renderizza();
+    } catch (e) {
+      notifica(e.message, true);
+    }
+  }
+
+  async function elimina() {
+    if (S.selNum === null) return;
+    try {
+      await Motore.chiama("eliminaAnnotazione", [S.id, S.pagina, S.selNum]);
+      S.modifiche++;
+      S.selNum = null;
+      $("#an-azioni").hidden = true;
+      await renderizza();
+    } catch (e) {
+      notifica(e.message, true);
+    }
+  }
+
+  // ── visualizzatore ───────────────────────────────────────────────────────────
+  const aggiornaEtichetta = () => { $("#an-pag").textContent = S.id === null ? "—" : `Pag. ${S.pagina + 1} / ${S.n}`; };
+
+  async function renderizza() {
+    if (S.id === null) return;
+    const tk = ++S.token;
+    const dpr = Math.min(window.devicePixelRatio || 1, 2);
+    try {
+      const r = await Motore.chiama("renderPagina", [S.id, S.pagina, S.zoom * dpr]);
+      const a = await Motore.chiama("annotazioni", [S.id, S.pagina]);
+      if (tk !== S.token) return;
+      S.annot = a.annotazioni;
+      if (S.selNum !== null && !S.annot.some((x) => x.num === S.selNum)) deseleziona();
+      assicuraPagina();
+      const vecchio = S.url;
+      S.url = URL.createObjectURL(new Blob([r.png], { type: "image/png" }));
+      const box = $("#an-pagina"), img = $("#an-img");
+      box.style.width = r.pw * S.zoom + "px";
+      box.style.height = r.ph * S.zoom + "px";
+      S.pw = r.pw; S.ph = r.ph;
+      img.src = S.url;
+      if (vecchio) URL.revokeObjectURL(vecchio);
+      aggiornaCaselle();
+    } catch (e) {
+      notifica(e.message, true);
+    }
+  }
+
+  function vaiA(p) {
+    if (S.id === null || p < 0 || p >= S.n) return;
+    S.pagina = p;
+    S.annot = [];
+    deseleziona();
+    aggiornaEtichetta();
+    renderizza();
+  }
+
+  function zoom(fattore) {
+    S.zoom = Math.min(ZOOM_MAX, Math.max(ZOOM_MIN, S.zoom * fattore));
+    renderizza();
+  }
+
+  async function apri(file) {
+    if (!file) return;
+    if (S.modifiche > 0 && !(await conferma("Ci sono modifiche non salvate. Se apri un altro PDF le perdi.", "Apri comunque"))) return;
+    try {
+      const bytes = await leggiFile(file);
+      const r = await conOccupato("Apro il PDF…", () => Motore.chiama("apri", [bytes], [bytes.buffer]));
+      if (r.protetto) { notifica(`${file.name} è protetto da password: non posso aprirlo.`, true); return; }
+      const dim = await Motore.chiama("dimensioni", [r.id, 0]);
+      if (S.id !== null) Motore.chiama("chiudi", [S.id]);
+      S.id = r.id; S.nome = file.name; S.n = r.numPagine; S.pagina = 0; S.annot = []; S.modifiche = 0;
+      S.pw = dim.pw; S.ph = dim.ph;
+      const largo = vista.clientWidth - 24;
+      S.zoom = window.innerWidth < 720 && largo > 0 ? Math.max(ZOOM_MIN, Math.min(1, largo / S.pw)) : 1.0;
+      deseleziona();
+      aggiornaEtichetta();
+      await renderizza();
+    } catch (e) {
+      notifica(`${file.name}: ${e.message}`, true);
+    }
+  }
+
+  async function salva() {
+    if (S.id === null) { notifica("Nessun PDF aperto.", true); return; }
+    const dest = await scegliDestinazione(`${S.nome.replace(/\.pdf$/i, "")}_annotato.pdf`);
+    if (!dest) return;
+    try {
+      const r = await conOccupato("Salvo il PDF…", () => Motore.chiama("salvaConAnnotazioni", [S.id]));
+      const nome = await scriviDestinazione(dest, r.bytes);
+      S.modifiche = 0;
+      notifica(`PDF salvato: ${nome}`);
+    } catch (e) {
+      notifica(e.message, true);
+    }
+  }
+
+  // ── collegamenti ─────────────────────────────────────────────────────────────
+  $("#an-apri").addEventListener("click", () => $("#an-input").click());
+  $("#an-input").addEventListener("change", async (e) => {
+    const f = e.target.files[0];
+    e.target.value = "";
+    await apri(f);
+  });
+  $("#an-salva").addEventListener("click", salva);
+  $$("#tab-annota [data-strumento]").forEach((b) => b.addEventListener("click", () => impostaStrumento(b.dataset.strumento)));
+  $("#an-prec").addEventListener("click", () => vaiA(S.pagina - 1));
+  $("#an-succ").addEventListener("click", () => vaiA(S.pagina + 1));
+  $("#an-zpiu").addEventListener("click", () => zoom(1.15));
+  $("#an-zmeno").addEventListener("click", () => zoom(1 / 1.15));
+  $("#an-modifica").addEventListener("click", modifica);
+  $("#an-elimina").addEventListener("click", elimina);
+  abilitaTrascinamentoFile($("#tab-annota"), (files) => apri(files[0]));
+  disegnaColori();
+  return { stato: S }; // esposto per le prove automatiche
+})();
+
+// ═══════════════════════════════════════════════════════════════════════════
+//  SCHEDE E AVVIO
+// ═══════════════════════════════════════════════════════════════════════════
+function vaiAScheda(nome) {
+  if (!$("#tab-" + nome)) nome = "unisci";
+  $$("nav#schede button").forEach((b) => b.setAttribute("aria-selected", String(b.dataset.tab === nome)));
+  $$(".pannello").forEach((p) => (p.hidden = p.id !== "tab-" + nome));
+  history.replaceState(null, "", "#" + nome);
+}
+$$("nav#schede button").forEach((b) => b.addEventListener("click", () => vaiAScheda(b.dataset.tab)));
+vaiAScheda(location.hash.slice(1) || "unisci");
+
+Motore.avvia().then(
+  () => { $("#stato-motore").textContent = "Motore PDF pronto"; },
+  (e) => { const s = $("#stato-motore"); s.textContent = "Motore PDF non avviato: " + e.message; s.className = "errore"; }
+);
+</script>
+</body>
+</html>
